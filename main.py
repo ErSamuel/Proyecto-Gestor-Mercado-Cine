@@ -5,6 +5,8 @@ import os
 from main_rol2 import iniciar_programa
 #importar el modulo para el rol 3
 from main_rol3 import iniciar_modulo_boleteria
+#importar el modulo para el rol 4 (Gestion de Inventario de Dulceria)
+from main_rol4 import iniciar_modulo_inventario, guardar_inventario_final
 
 #variables globales
 # Colores ANSI
@@ -72,7 +74,8 @@ def main():
              menu_admin()
              opcion_admin = input("\nIngrese una de las opciones para continuar: ").strip()
              if opcion_admin == '1': 
-                pass
+                # Rol 4: Gestion del Inventario de la Dulceria
+                iniciar_modulo_inventario()
              elif opcion_admin == '2':
                 pass 
              elif opcion_admin == '3':
@@ -84,6 +87,7 @@ def main():
                 print("\nLa opcion que ha ingresado no es correcta. Intente nuevamente.\n ")
 
         case '3':
+          guardar_inventario_final()
           print(f"{AMARILLO} Saliendo del programa, Gracias por preferir nuestro servicios, le esperamos nuevamente !{RESET}")
           break
             
