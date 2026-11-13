@@ -1,9 +1,9 @@
 # Archivo: main_rol3.py
-# Gestiona la cartelera, ver salas, compra de entradas y pago (Rol 3) con colores ANSI
-
+import os
+import csv
 from modelo_pelicula import Pelicula
 
-# Colores ANSI (importados conceptualmente del main o definidos aquí para independencia del módulo)
+# Colores ANSI
 AZUL = "\033[94m"
 VERDE = "\033[92m"
 AMARILLO = "\033[93m"
@@ -11,14 +11,53 @@ ROJO = "\033[91m"
 RESET = "\033[0m"
 NEGRITA = "\033[1m"
 
-def cargar_cartelera_inicial():
-    """Retorna un diccionario con películas de ejemplo en cartelera."""
-    cartelera = {
-        "PEL-01": Pelicula("PEL-01", "Avatar: El Camino del Agua", "04:00 PM", "Sala 2", 5.00, 40),
-        "PEL-02": Pelicula("PEL-02", "Spider-Man: Across the Spider-Verse", "07:00 PM", "Sala 1", 5.00, 25),
-        "PEL-03": Pelicula("PEL-03", "Interestelar (Reestreno)", "09:30 PM", "Sala 3", 5.00, 15)
-    }
+ARCHIVO_CSV = "cartelera.csv"
+
+def inicializar_csv_si_no_existe():
+    """Crea el archivo CSV con datos iniciales si no existe en la carpeta."""
+    if not os.path.exists(ARCHIVO_CSV):
+        peliculas_iniciales = [
+            ["PEL-01", "Avatar: El Camino del Agua", "04:00 PM", "Sala 2", "5.00", "40"],
+            ["PEL-02", "Spider-Man: Across the Spider-Verse", "07:00 PM", "Sala 1", "5.00", "25"],
+            ["PEL-03", "Interestelar (Reestreno)", "09:30 PM", "Sala 3", "5.00", "15"]
+        ]
+        with open(ARCHIVO_CSV, mode="w", newline="", encoding="utf-8") as archivo:
+            writer = csv.writer(archivo)
+            writer.writerow(["id", "titulo", "horario", "sala", "precio", "asientos"]) # Cabecera
+            writer.writerows(peliculas_iniciales)
+
+def cargar_cartelera_desde_csv():
+    """Lee las películas desde el archivo CSV y retorna un diccionario."""
+    inicializar_csv_si_no_existe()
+    cartelera = {}
+    with open(ARCHIVO_CSV, mode="r", encoding="utf-8") as archivo:
+        reader = csv.DictReader(archivo)
+        for fila in reader:
+            pel = Pelicula(
+                fila["id"],
+                fila["titulo"],
+                fila["horario"],
+                fila["sala"],
+                float(fila["precio"]),
+                int(fila["asientos"])
+            )
+            cartelera[fila["id"]] = pel
     return cartelera
+
+def guardar_cartelera_en_csv(cartelera):
+    """Guarda el estado actual de la cartelera (y sus asientos) de vuelta en el CSV."""
+    with open(ARCHIVO_CSV, mode="w", newline="", encoding="utf-8") as archivo:
+        writer = csv.writer(archivo)
+        writer.writerow(["id", "titulo", "horario", "sala", "precio", "asientos"])
+        for pelicula in cartelera.values():
+            writer.writerow([
+                pelicula.get_id(),
+                pelicula.get_titulo(),
+                pelicula.get_horario(),
+                pelicula.get_sala(),
+                pelicula.get_precio(),
+                pelicula.get_asientos()
+            ])
 
 def ver_salas_y_cartelera(cartelera):
     """Muestra las salas y películas disponibles con formato de colores."""
@@ -45,7 +84,7 @@ def procesar_pago(total_a_pagar):
         return False
 
 def comprar_entradas(cartelera):
-    """Gestiona la compra de boletos y actualización de asientos."""
+    """Gestiona la compra de boletos, actualiza asientos y guarda en CSV."""
     ver_salas_y_cartelera(cartelera)
     
     id_elegido = input(f"\n{AMARILLO}Ingrese el ID de la película que desea ver (ej. PEL-01): {RESET}").strip().upper()
@@ -79,16 +118,17 @@ def comprar_entradas(cartelera):
     confirmar = input(f"{AMARILLO}¿Desea proceder al pago? (s/n): {RESET}").strip().lower()
     if confirmar == 's':
         if procesar_pago(total):
-            # Actualizamos el stock de asientos de la película
+            # Actualizamos el stock de asientos y guardamos en el archivo CSV
             nuevo_stock = pelicula.get_asientos() - cantidad
             pelicula.set_asientos(nuevo_stock)
-            print(f"\n{VERDE}¡Disfrute su función! Sus asientos han sido reservados.{RESET}")
+            guardar_cartelera_en_csv(cartelera)
+            print(f"\n{VERDE}¡Disfrute su función! Sus asientos han sido reservados y guardados.{RESET}")
     else:
         print(f"{AMARILLO}Compra cancelada.{RESET}")
 
 def iniciar_modulo_boleteria():
-    """Función principal del Rol 3 con menú en colores."""
-    cartelera = cargar_cartelera_inicial()
+    """Función principal del Rol 3 cargando datos desde CSV."""
+    cartelera = cargar_cartelera_desde_csv()
     
     while True:
         print(f"\n{AZUL}--- MENÚ DE BOLETERÍA ---{RESET}")
