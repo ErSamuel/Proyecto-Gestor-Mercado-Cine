@@ -3,7 +3,7 @@
 import os
 #importar el modulo para el rol 2
 from main_rol2 import iniciar_programa
-
+from main_peliculas import ejecutar_menu_boleteria
 #variables globales
 # Colores ANSI
 AZUL = "\033[94m"
@@ -44,19 +44,18 @@ def main():
     mostrar_menu()
 
     opcion = input("Ingrese una opcion (1-3): ").strip()
-
+    limpiar_pantalla()
     match opcion:
         case '1':
             while True:
                 print(f"\n{AZUL} ------ BIENVENIDO  ------- {RESET}\n")
                 menu_usuario()
                 opcion_usuario = input("Ingrese una de las opciones para continuar: ").strip()
-                limpiar_pantalla()
                 if opcion_usuario == '1': #mostrar la informacion para la dulceria
                     iniciar_programa()
                 elif opcion_usuario == '2':
                    #boleteria 
-                   pass
+                   ejecutar_menu_boleteria()
                 elif opcion_usuario =='3':
                     print("\nSaliendo al Menu Principal ...\n")
                     break
