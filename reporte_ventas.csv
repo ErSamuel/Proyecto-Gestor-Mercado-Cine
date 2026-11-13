@@ -1,2 +1,3 @@
-id_pelicula,nombre_pelicula,costo
-1,Inception,8.5
+tipo,nombre_item,cantidad,total_pagado
+Boleto,Inception,2,17.0
+Dulce,Cotufas Grandes,2,9.0
