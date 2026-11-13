@@ -1,10 +1,13 @@
-
 # menu principal
 import os
-#importar el modulo para el rol 2
+# importar el modulo para el rol 2
 from main_rol2 import iniciar_programa
+# importar el modulo de peliculas / boleteria
 from main_peliculas import ejecutar_menu_boleteria
-#variables globales
+# importar el modulo para el rol 4 (Gestion de Inventario de Dulceria)
+from main_rol4 import iniciar_modulo_inventario, guardar_inventario_final
+
+# variables globales
 # Colores ANSI
 AZUL = "\033[94m"
 VERDE = "\033[92m"
@@ -12,17 +15,17 @@ AMARILLO = "\033[93m"
 ROJO = "\033[91m"
 RESET = "\033[0m"
 NEGRITA = "\033[1m"
-#funcion para limpiar la pantalla
+
+# funcion para limpiar la pantalla
 def limpiar_pantalla():
   os.system("cls" if os.name == "nt" else "clear")
 
 def mostrar_menu():
-  
   print(f"{AZUL}{NEGRITA}=========================================")
   print(f"|| -------------- Menu De Navegacion ------------------||")
   print(f"========================================================={RESET}")
   print(f"{NEGRITA}Seleccione su tipo de usuario:{RESET}\n")
-  print(f"  {VERDE}[1]{RESET} USUARIO)")
+  print(f"  {VERDE}[1]{RESET} USUARIO")
   print(f"  {AZUL}[2]{RESET} ADMINISTRADOR")
   print(f"  {ROJO}[3]{RESET} Salir\n")
   print(f"{AZUL}-----------------------------------------------------{RESET}")
@@ -37,7 +40,8 @@ def menu_admin():
    print(f"\n2. {AZUL} Gestionar La Cartelera De Peliculas. {RESET} \n")
    print(f"\n3. {AZUL} Control y Reportes. {RESET} \n")
    print(f"\n4. {ROJO} Salir al menu principal. {RESET} \n")
-#funcion principal del codigo - punto de partida
+
+# funcion principal del codigo - punto de partida
 def main():
   while True:
     limpiar_pantalla()
@@ -51,10 +55,10 @@ def main():
                 print(f"\n{AZUL} ------ BIENVENIDO  ------- {RESET}\n")
                 menu_usuario()
                 opcion_usuario = input("Ingrese una de las opciones para continuar: ").strip()
-                if opcion_usuario == '1': #mostrar la informacion para la dulceria
+                if opcion_usuario == '1': # mostrar la informacion para la dulceria
                     iniciar_programa()
                 elif opcion_usuario == '2':
-                   #boleteria 
+                   # boleteria 
                    ejecutar_menu_boleteria()
                 elif opcion_usuario =='3':
                     print("\nSaliendo al Menu Principal ...\n")
@@ -69,7 +73,8 @@ def main():
              menu_admin()
              opcion_admin = input("\nIngrese una de las opciones para continuar: ").strip()
              if opcion_admin == '1': 
-                pass
+                # Rol 4: Gestion del Inventario de la Dulceria
+                iniciar_modulo_inventario()
              elif opcion_admin == '2':
                 pass 
              elif opcion_admin == '3':
@@ -81,6 +86,7 @@ def main():
                 print("\nLa opcion que ha ingresado no es correcta. Intente nuevamente.\n ")
 
         case '3':
+          guardar_inventario_final()
           print(f"{AMARILLO} Saliendo del programa, Gracias por preferir nuestro servicios, le esperamos nuevamente !{RESET}")
           break
             
