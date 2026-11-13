@@ -3,6 +3,8 @@
 import os
 #importar el modulo para el rol 2
 from main_rol2 import iniciar_programa
+#importar el modulo para el rol 3
+from main_rol3 import iniciar_modulo_boleteria
 
 #variables globales
 # Colores ANSI
@@ -55,8 +57,8 @@ def main():
                 if opcion_usuario == '1': #mostrar la informacion para la dulceria
                     iniciar_programa()
                 elif opcion_usuario == '2':
-                   #boleteria 
-                   pass
+                   #boleteria (rol3)
+                   iniciar_modulo_boleteria()
                 elif opcion_usuario =='3':
                     print("\nSaliendo al Menu Principal ...\n")
                     break
