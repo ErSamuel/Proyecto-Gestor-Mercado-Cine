@@ -6,7 +6,8 @@ from main_rol2 import iniciar_programa
 from main_peliculas import ejecutar_menu_boleteria
 # importar el modulo para el rol 4 (Gestion de Inventario de Dulceria)
 from main_rol4 import iniciar_modulo_inventario, guardar_inventario_final
-
+#importar el modulo para las metricas
+from metricas_y_reportes import ejecutar_menu_metricas
 # variables globales
 # Colores ANSI
 AZUL = "\033[94m"
@@ -78,7 +79,8 @@ def main():
              elif opcion_admin == '2':
                 pass 
              elif opcion_admin == '3':
-                pass
+                #metricas y reportes
+                ejecutar_menu_metricas()
              elif opcion_admin == '4':
                 print(f"{AMARILLO} Saliendo al menu principal.{RESET}")
                 break
@@ -89,6 +91,8 @@ def main():
           guardar_inventario_final()
           print(f"{AMARILLO} Saliendo del programa, Gracias por preferir nuestro servicios, le esperamos nuevamente !{RESET}")
           break
+        case _:
+          print(f"\n{ROJO}Opción no válida. Por favor, intente de nuevo.{RESET}")
             
 if __name__ == "__main__":
   main()

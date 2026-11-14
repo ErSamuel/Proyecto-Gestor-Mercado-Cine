@@ -1,5 +1,6 @@
 # Archivo: main_rol2.py
 # Punto de entrada para probar e integrar el Rol 2 (Estructura y Busqueda de Snacks)
+import os
 from pagos import procesar_pago, registrar_en_reporte
 from gestor_snacks import (
     cargar_snacks_desde_csv,
@@ -16,6 +17,10 @@ ROJO = "\033[91m"
 RESET = "\033[0m"
 NEGRITA = "\033[1m"
 
+# funcion para limpiar la pantalla
+def limpiar_pantalla():
+  os.system("cls" if os.name == "nt" else "clear")
+
 def menu_snacks_usuario(diccionario_snacks):
     """Submenú del Rol 2 para consultar, buscar y comprar snacks."""
     while True:
@@ -26,7 +31,7 @@ def menu_snacks_usuario(diccionario_snacks):
         print(f" {ROJO} 4. {RESET} Volver al menu anterior")
         
         opcion = input("\nSelecciona una opcion (1-4): ").strip()
-        
+        limpiar_pantalla()
         if opcion == "1":
             mostrar_catalogo_snacks(diccionario_snacks)
         elif opcion == "2":
