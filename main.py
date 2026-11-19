@@ -1,6 +1,6 @@
 # Archivo: main.py
 # Punto de entrada principal del Sistema Gestor de Cine (Paso 2 - Organizacion por Mecanica).
-
+import time
 from boleteria.menu_boleteria import ejecutar_menu_boleteria
 from dulceria.menu_admin import iniciar_modulo_inventario
 from dulceria.menu_cliente import iniciar_dulceria_cliente
@@ -13,7 +13,7 @@ from nucleo.consola import (
     mostrar_encabezado,
     pausar
 )
-
+from config import PASSWORD_ADMIN 
 
 def mostrar_menu():
     """Muestra el menu principal de seleccion de perfil."""
@@ -51,8 +51,8 @@ def main():
         mostrar_menu()
 
         opcion = input("Ingrese una opción (1-3): ").strip()
-        match opcion:
-            case "1":
+        match opcion: 
+            case "1": #menu para usuarios
                 while True:
                     limpiar_pantalla()
                     mostrar_encabezado("MENÚ DE USUARIO", ancho=45)
@@ -68,26 +68,38 @@ def main():
                     else:
                         print(f"\n{Colores.ROJO}Opción inválida{Colores.RESET}, por favor ingrese una opción entre 1 y 3.")
                         pausar()
-            case "2":
+            case "2": #menu administradores - se requiere contrasena
+                intentos = 0
                 while True:
                     limpiar_pantalla()
-                    print(f"\n{Colores.AMARILLO}{Colores.NEGRITA}------ Ha Ingresado Como Administrador Del Sistema --------{Colores.RESET}\n")
-                    menu_admin()
-                    opcion_admin = input("Ingrese una de las opciones para continuar: ").strip()
-                    if opcion_admin == "1":
-                        iniciar_modulo_inventario()
-                    elif opcion_admin == "2":
-                        print(f"\n{Colores.AMARILLO}[INFO] El módulo 'Gestión de Cartelera' (Rol 5) aún está pendiente de implementación.{Colores.RESET}")
-                        pausar()
-                    elif opcion_admin == "3":
-                        # Rol 6 reconectado hacia finanzas/reportes.py
-                        ejecutar_menu_metricas()
-                    elif opcion_admin == "4":
-                        print(f"\n{Colores.AMARILLO}Saliendo al menú principal.{Colores.RESET}")
+                    if(intentos==3):
+                        print("\nNumero de intentos 3 -> volviendo al menu principal.\n")
+                        time.sleep(2)
                         break
                     else:
-                        print(f"\n{Colores.ROJO}La opción que ha ingresado no es correcta. Intente nuevamente.{Colores.RESET}")
-                        pausar()
+                        password = input("\nIngrese su contraseña: ")
+                        if password == PASSWORD_ADMIN:
+                            print(f"\n{Colores.AMARILLO}{Colores.NEGRITA}------ Ha Ingresado Como Administrador Del Sistema --------{Colores.RESET}\n")
+                            menu_admin()
+                            opcion_admin = input("Ingrese una de las opciones para continuar: ").strip()
+                            if opcion_admin == "1":
+                                iniciar_modulo_inventario()
+                            elif opcion_admin == "2":
+                                print(f"\n{Colores.AMARILLO}[INFO] El módulo 'Gestión de Cartelera' (Rol 5) aún está pendiente de implementación.{Colores.RESET}")
+                                pausar()
+                            elif opcion_admin == "3":
+                                # Rol 6 reconectado hacia finanzas/reportes.py
+                                ejecutar_menu_metricas()
+                            elif opcion_admin == "4":
+                                print(f"\n{Colores.AMARILLO}Saliendo al menú principal.{Colores.RESET}")
+                                break
+                            else:
+                                print(f"\n{Colores.ROJO}La opción que ha ingresado no es correcta. Intente nuevamente.{Colores.RESET}")
+                                pausar()
+                        else:
+                            print("\nContraseña incorrecta intente nuevamente: ")
+                            time.sleep(2)
+                            intentos +=1
             case "3":
                 limpiar_pantalla()
                 print(f"{Colores.AMARILLO}Saliendo del programa. Gracias por preferir nuestros servicios, ¡le esperamos nuevamente!{Colores.RESET}")

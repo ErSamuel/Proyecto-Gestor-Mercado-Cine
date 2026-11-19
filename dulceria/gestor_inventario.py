@@ -32,7 +32,7 @@ def generar_id_unico(nombre_producto, diccionario_snacks):
     codigo_base = valor_hash % 1000
 
     for intento in range(1000):
-        candidato = f"SNK-{(codigo_base + intento) % 1000:03d}"
+        candidato = f"{(codigo_base + intento) % 1000:03d}"
         if candidato not in diccionario_snacks:
             return candidato
         if diccionario_snacks[candidato].get_nombre().strip().lower() == nombre_limpio:
@@ -125,9 +125,9 @@ def crear_csv_por_defecto(ruta_archivo=None):
 
 def mostrar_catalogo_snacks(diccionario_snacks):
     """Muestra todos los snacks disponibles (con stock > 0) al cliente."""
-    print("\n" + "=" * 78)
+    print("\n" + "=" * 98)
     print("                     CATÁLOGO DE SNACKS DISPONIBLES")
-    print("=" * 78)
+    print("=" * 98)
 
     if not diccionario_snacks:
         print("No hay snacks registrados en el sistema en este momento.")

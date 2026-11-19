@@ -67,7 +67,7 @@ class Snack:
         return (
             "ID: " + self.__id_snack +
             " | Producto: " + self.__nombre +
-            " | Desc: " + self.__descripcion +
             " | Precio: $" + "{:.2f}".format(self.__precio) +
-            " | Stock: " + estado
+            " | Stock: " + estado +
+            " | desc: " + self.__descripcion 
         )
