@@ -1,0 +1,6 @@
+# Ignora caches compilados de Python y archivos temporales del sistema
+__pycache__/
+*.py[cod]
+*$py.class
+.DS_Store
+Thumbs.db

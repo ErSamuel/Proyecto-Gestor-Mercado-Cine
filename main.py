@@ -1,128 +1,101 @@
-# menu principal
-import os
-# importar el modulo para el rol 2
-from main_rol2 import iniciar_programa
-# importar el modulo de peliculas / boleteria
-from main_peliculas import ejecutar_menu_boleteria
-# importar el modulo para el rol 4 (Gestion de Inventario de Dulceria)
-from main_rol4 import iniciar_modulo_inventario
+# Archivo: main.py
+# Punto de entrada principal del Sistema Gestor de Cine (Paso 2 - Organizacion por Mecanica).
 
-# variables globales
-# Colores ANSI
-AZUL = "\033[94m"
-VERDE = "\033[92m"
-AMARILLO = "\033[93m"
-ROJO = "\033[91m"
-RESET = "\033[0m"
-NEGRITA = "\033[1m"
-
-
-# funcion para limpiar la pantalla
-def limpiar_pantalla():
-  os.system("cls" if os.name == "nt" else "clear")
-
-
-def pausar():
-  """Pausa la ejecución para que el usuario pueda leer los mensajes antes de limpiar."""
-  input(f"\n{AMARILLO}Presione Enter para continuar...{RESET}")
+from boleteria.menu_boleteria import ejecutar_menu_boleteria
+from dulceria.menu_admin import iniciar_modulo_inventario
+from dulceria.menu_cliente import iniciar_dulceria_cliente
+from finanzas.reportes import ejecutar_menu_metricas
+# Importa la clase Colores unificada desde su archivo dedicado
+from nucleo.colores import Colores
+from nucleo.consola import (
+    habilitar_ansi,
+    limpiar_pantalla,
+    mostrar_encabezado,
+    pausar
+)
 
 
 def mostrar_menu():
-  # Banner alineado exactamente a 57 caracteres de ancho
-  print(f"{AZUL}{NEGRITA}=========================================================")
-  print("|| ---------------- Menú de Navegación ----------------||")
-  print(f"========================================================={RESET}")
-  print(f"{NEGRITA}Seleccione su tipo de usuario:{RESET}\n")
-  print(f"  {VERDE}[1]{RESET} Usuario")
-  print(f"  {VERDE}[2]{RESET} Administrador")
-  print(f"  {ROJO}[3]{RESET} Salir\n")
-  print(f"{AZUL}---------------------------------------------------------{RESET}")
+    """Muestra el menu principal de seleccion de perfil."""
+    print(f"{Colores.AZUL}{Colores.NEGRITA}=========================================================")
+    print("|| ---------------- Menú de Navegación ----------------||")
+    print(f"========================================================={Colores.RESET}")
+    print(f"{Colores.NEGRITA}Seleccione su tipo de usuario:{Colores.RESET}\n")
+    print(f"  {Colores.VERDE}[1]{Colores.RESET} Usuario")
+    print(f"  {Colores.VERDE}[2]{Colores.RESET} Administrador")
+    print(f"  {Colores.ROJO}[3]{Colores.RESET} Salir\n")
+    print(f"{Colores.AZUL}---------------------------------------------------------{Colores.RESET}")
 
 
 def menu_usuario():
-  # Formato uniforme y tabulacion consistente en opciones de Usuario
-  print(f"  {VERDE}[1]{RESET} Dulcería")
-  print(f"  {VERDE}[2]{RESET} Boletería")
-  print(f"  {ROJO}[3]{RESET} Volver al menú principal\n")
+    """Imprime las opciones disponibles para el perfil Usuario."""
+    print(f"  {Colores.VERDE}[1]{Colores.RESET} Dulcería")
+    print(f"  {Colores.VERDE}[2]{Colores.RESET} Boletería")
+    print(f"  {Colores.ROJO}[3]{Colores.RESET} Volver al menú principal\n")
 
 
 def menu_admin():
-  # Formato uniforme y colores consistentes (acciones en verde, salida en rojo)
-  print(f"  {VERDE}[1]{RESET} Gestionar el inventario de la dulcería")
-  print(f"  {VERDE}[2]{RESET} Gestionar la cartelera de películas")
-  print(f"  {VERDE}[3]{RESET} Control y reportes")
-  print(f"  {ROJO}[4]{RESET} Volver al menú principal\n")
+    """Imprime las opciones disponibles para el perfil Administrador."""
+    print(f"  {Colores.VERDE}[1]{Colores.RESET} Gestionar el inventario de la dulcería")
+    print(f"  {Colores.VERDE}[2]{Colores.RESET} Gestionar la cartelera de películas")
+    print(f"  {Colores.VERDE}[3]{Colores.RESET} Control y reportes")
+    print(f"  {Colores.ROJO}[4]{Colores.RESET} Volver al menú principal\n")
 
 
-# funcion principal del codigo - punto de partida
 def main():
-  # Habilita secuencias de escape ANSI en consolas de Windows
-  os.system("")
+    """Orquestador principal del sistema."""
+    habilitar_ansi()
 
-  while True:
-    limpiar_pantalla()
-    mostrar_menu()
+    while True:
+        limpiar_pantalla()
+        mostrar_menu()
 
-    opcion = input("Ingrese una opción (1-3): ").strip()
-    match opcion:
-        case '1':
-            while True:
-                # Limpia la pantalla al comienzo del ciclo para no borrar mensajes previos sin pausa
+        opcion = input("Ingrese una opción (1-3): ").strip()
+        match opcion:
+            case "1":
+                while True:
+                    limpiar_pantalla()
+                    mostrar_encabezado("MENÚ DE USUARIO", ancho=45)
+                    menu_usuario()
+                    opcion_usuario = input("Ingrese una de las opciones para continuar: ").strip()
+                    if opcion_usuario == "1":
+                        iniciar_dulceria_cliente()
+                    elif opcion_usuario == "2":
+                        ejecutar_menu_boleteria()
+                    elif opcion_usuario == "3":
+                        print(f"\n{Colores.AMARILLO}Saliendo al menú principal...{Colores.RESET}")
+                        break
+                    else:
+                        print(f"\n{Colores.ROJO}Opción inválida{Colores.RESET}, por favor ingrese una opción entre 1 y 3.")
+                        pausar()
+            case "2":
+                while True:
+                    limpiar_pantalla()
+                    print(f"\n{Colores.AMARILLO}{Colores.NEGRITA}------ Ha Ingresado Como Administrador Del Sistema --------{Colores.RESET}\n")
+                    menu_admin()
+                    opcion_admin = input("Ingrese una de las opciones para continuar: ").strip()
+                    if opcion_admin == "1":
+                        iniciar_modulo_inventario()
+                    elif opcion_admin == "2":
+                        print(f"\n{Colores.AMARILLO}[INFO] El módulo 'Gestión de Cartelera' (Rol 5) aún está pendiente de implementación.{Colores.RESET}")
+                        pausar()
+                    elif opcion_admin == "3":
+                        # Rol 6 reconectado hacia finanzas/reportes.py
+                        ejecutar_menu_metricas()
+                    elif opcion_admin == "4":
+                        print(f"\n{Colores.AMARILLO}Saliendo al menú principal.{Colores.RESET}")
+                        break
+                    else:
+                        print(f"\n{Colores.ROJO}La opción que ha ingresado no es correcta. Intente nuevamente.{Colores.RESET}")
+                        pausar()
+            case "3":
                 limpiar_pantalla()
-                print(f"\n{AZUL}{NEGRITA}=========================================")
-                print("            MENÚ DE USUARIO              ")
-                print(f"========================================={RESET}\n")
-                menu_usuario()
-                opcion_usuario = input("Ingrese una de las opciones para continuar: ").strip()
-                if opcion_usuario == '1':  # mostrar la informacion para la dulceria
-                    iniciar_programa()
-                elif opcion_usuario == '2':
-                    # boleteria
-                    ejecutar_menu_boleteria()
-                elif opcion_usuario == '3':
-                    print(f"\n{AMARILLO}Saliendo al menú principal...{RESET}")
-                    break
-                else:
-                    # Pausa para que el usuario pueda leer el error antes de limpiar la pantalla
-                    print(f"\n{ROJO}Opción inválida{RESET}, por favor ingrese una opción entre 1 y 3.")
-                    pausar()
-        case '2':
-          while True:
-             # Limpia la pantalla antes de imprimir el banner para que sea visible
-             limpiar_pantalla()
-             print(f"\n{AMARILLO}{NEGRITA}------ Ha Ingresado Como Administrador Del Sistema --------{RESET}\n")
-             menu_admin()
-             opcion_admin = input("Ingrese una de las opciones para continuar: ").strip()
-             if opcion_admin == '1':
-                # Rol 4: Gestion del Inventario de la Dulceria
-                iniciar_modulo_inventario()
-             elif opcion_admin == '2':
-                # Aviso informativo mientras se implementa el Rol 5 en bloques posteriores
-                print(f"\n{AMARILLO}[INFO] El módulo 'Gestión de Cartelera' (Rol 5) aún está pendiente de implementación.{RESET}")
-                pausar()
-             elif opcion_admin == '3':
-                # Aviso informativo mientras se implementa el Rol 6 en bloques posteriores
-                print(f"\n{AMARILLO}[INFO] El módulo 'Control y Reportes' (Rol 6) aún está pendiente de implementación.{RESET}")
-                pausar()
-             elif opcion_admin == '4':
-                print(f"\n{AMARILLO}Saliendo al menú principal.{RESET}")
+                print(f"{Colores.AMARILLO}Saliendo del programa. Gracias por preferir nuestros servicios, ¡le esperamos nuevamente!{Colores.RESET}")
                 break
-             else:
-                # Pausa tras el error para que no desaparezca al redibujar el menu
-                print(f"\n{ROJO}La opción que ha ingresado no es correcta. Intente nuevamente.{RESET}")
+            case _:
+                print(f"\n{Colores.ROJO}Opción inválida. Por favor, ingrese una opción entre 1 y 3.{Colores.RESET}")
                 pausar()
-
-        case '3':
-          limpiar_pantalla()
-          # La persistencia ya se realiza en tiempo real en cada operacion
-          print(f"{AMARILLO}Saliendo del programa. Gracias por preferir nuestros servicios, ¡le esperamos nuevamente!{RESET}")
-          break
-
-        case _:
-          # Captura opciones invalidas del menu principal que antes se ignoraban en silencio
-          print(f"\n{ROJO}Opción inválida. Por favor, ingrese una opción entre 1 y 3.{RESET}")
-          pausar()
 
 
 if __name__ == "__main__":
-  main()
+    main()
