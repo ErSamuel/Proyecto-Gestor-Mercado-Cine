@@ -1,17 +1,27 @@
 # Archivo: main_rol4.py
 # Modulo correspondiente al ROL 4: Gestion del Inventario de la Dulceria (Administrador)
 # Permite agregar productos, modificar precios, actualizar stock y eliminar productos.
-# Todas las modificaciones se realizan sobre la estructura en memoria (diccionario de objetos Snack).
-# El guardado en archivo (stock.csv) se realiza unicamente al finalizar el programa.
+# Cada modificacion se persiste inmediatamente en stock.csv para mantener sincronia en tiempo real con el Cliente.
 
+import math
 import os
-import atexit
 from modelo_snack import Snack
 from gestor_snacks import (
+    RUTA_STOCK_DEFECTO,
     generar_id_hash,
+    generar_id_unico,
     cargar_snacks_desde_csv,
     guardar_snacks_en_csv
 )
+
+# Limites de validacion para prevenir desbordamiento de tabla, memoria y valores invalidos (NaN/Inf)
+MIN_LEN_NOMBRE = 2
+MAX_LEN_NOMBRE = 40
+MAX_LEN_DESCRIPCION = 120
+PRECIO_MIN = 0.01
+PRECIO_MAX = 1000.00
+STOCK_MIN = 0
+STOCK_MAX = 10000
 
 # Constantes para estilos y colores ANSI en consola
 AZUL = "\033[94m"
@@ -22,36 +32,23 @@ CYAN = "\033[96m"
 RESET = "\033[0m"
 NEGRITA = "\033[1m"
 
-# Variable global a nivel de modulo para mantener el diccionario de objetos Snack en memoria
-_inventario_snacks = None
-
 
 def obtener_inventario():
     """
-    Retorna el diccionario de snacks cargado en memoria.
-    Si aun no ha sido cargado desde stock.csv, lo inicializa y carga.
+    Carga y retorna el inventario actualizado directamente desde stock.csv.
+    Evita usar una cache obsoleta que ignore compras recientes de clientes.
     Clave: ID Hash (str) -> Valor: Objeto de tipo Snack.
     """
-    global _inventario_snacks
-    if _inventario_snacks is None:
-        _inventario_snacks = cargar_snacks_desde_csv("stock.csv")
-    return _inventario_snacks
+    return cargar_snacks_desde_csv(RUTA_STOCK_DEFECTO)
 
 
 def guardar_inventario_final():
     """
-    Guarda el estado final del diccionario de snacks en el archivo stock.csv.
-    Esta funcion esta registrada para ejecutarse al cerrar el programa,
-    cumpliendo con la instruccion de persistir solo al finalizar.
+    Funcion mantenida por compatibilidad de importacion con main.py.
+    Dado que ahora cada cambio del Administrador se guarda de inmediato en stock.csv,
+    no sobrescribe el disco al salir para no borrar ventas realizadas por los clientes.
     """
-    global _inventario_snacks
-    if _inventario_snacks is not None:
-        guardar_snacks_en_csv(_inventario_snacks, "stock.csv")
-        print(f"\n{VERDE}[INFO] Inventario de dulceria guardado exitosamente en stock.csv.{RESET}")
-
-
-# Registrar guardado automatico al finalizar el proceso de Python
-atexit.register(guardar_inventario_final)
+    return None
 
 
 def limpiar_pantalla():
@@ -86,18 +83,25 @@ def listar_inventario_completo(diccionario_snacks):
     for id_hash, snack in diccionario_snacks.items():
         cant = snack.get_cantidad()
         color_stock = VERDE if cant > 5 else (AMARILLO if cant > 0 else ROJO)
-        stock_str = f"{color_stock}{cant:>5} uds{RESET}"
+        # Se formatea y alinea el texto antes de envolverlo con codigos ANSI para no romper columnas
+        stock_texto = f"{cant:>5} uds"
+        stock_str = f"{color_stock}{stock_texto:<9}{RESET}"
         precio_str = f"${snack.get_precio():.2f}"
-        
+
+        # Recortar nombre si supera el ancho de columna de 25 caracteres
+        nombre_mostrar = snack.get_nombre()
+        if len(nombre_mostrar) > 25:
+            nombre_mostrar = nombre_mostrar[:22] + "..."
+
         # Recortar descripcion si es muy larga para la tabla
         desc = snack.get_descripcion()
         if len(desc) > 30:
             desc = desc[:27] + "..."
 
         print(f"{AMARILLO}{snack.get_id_snack():<10}{RESET} | "
-              f"{NEGRITA}{snack.get_nombre():<25}{RESET} | "
+              f"{NEGRITA}{nombre_mostrar:<25}{RESET} | "
               f"{VERDE}{precio_str:<10}{RESET} | "
-              f"{stock_str:<17} | "
+              f"{stock_str} | "
               f"{desc}")
 
     print(f"{AZUL}{NEGRITA}" + "=" * 85 + f"{RESET}")
@@ -113,15 +117,16 @@ def localizar_snack(diccionario_snacks):
         print(f"{ROJO}Debe ingresar un valor valido.{RESET}")
         return None
 
-    # 1. Busqueda por clave hash exacta o ID directo
-    posible_hash = generar_id_hash(criterio)
-    if posible_hash in diccionario_snacks:
-        return posible_hash
-    
-    # Comprobar coincidencia exacta con mayusculas del ID (ej. SNK-743)
+    # 1. Comprueba primero coincidencia exacta con el ID en mayusculas (ej. SNK-743)
     criterio_upper = criterio.upper()
     if criterio_upper in diccionario_snacks:
         return criterio_upper
+
+    # 2. Busqueda por clave hash exacta si coincide tambien el nombre del producto
+    posible_hash = generar_id_hash(criterio)
+    if posible_hash in diccionario_snacks:
+        if diccionario_snacks[posible_hash].get_nombre().strip().lower() == criterio.lower():
+            return posible_hash
 
     # 2. Busqueda por coincidencia parcial en nombre o ID
     coincidencias = []
@@ -164,45 +169,54 @@ def localizar_snack(diccionario_snacks):
 def agregar_nuevo_dulce(diccionario_snacks):
     """
     Paso 1 del Rol 4: Agregar un nuevo dulce/snack al sistema.
-    Crea el objeto Snack con su ID hash generado y lo inserta en el diccionario.
+    Crea el objeto Snack con su ID hash unico y lo guarda inmediatamente en stock.csv.
     """
     print(f"\n{CYAN}{NEGRITA}--- AGREGAR NUEVO PRODUCTO AL INVENTARIO ---{RESET}")
-    
-    nombre = input("Nombre del dulce/snack: ").strip()
-    if not nombre:
-        print(f"{ROJO}Error: El nombre no puede estar vacio.{RESET}")
+
+    nombre = input(f"Nombre del dulce/snack ({MIN_LEN_NOMBRE}-{MAX_LEN_NOMBRE} caracteres): ").strip()
+    if len(nombre) < MIN_LEN_NOMBRE:
+        print(f"{ROJO}Error: El nombre debe tener al menos {MIN_LEN_NOMBRE} caracteres.{RESET}")
+        return
+    if len(nombre) > MAX_LEN_NOMBRE:
+        print(f"{ROJO}Error: El nombre no puede superar {MAX_LEN_NOMBRE} caracteres.{RESET}")
         return
 
-    # Comprobar si ya existe un producto con el mismo nombre o hash
-    id_generado = generar_id_hash(nombre)
-    if id_generado in diccionario_snacks:
-        snack_existente = diccionario_snacks[id_generado]
-        print(f"{ROJO}Error: Ya existe un producto con un identificador identico ({id_generado}):{RESET}")
-        print(f"Producto existente: {snack_existente.get_nombre()}")
-        print(f"{AMARILLO}Si desea actualizarlo, utilice las opciones de modificar precio o stock.{RESET}")
-        return
+    # Comprobar por nombre exacto si ya existe un producto igual en el inventario
+    for snack_existente in diccionario_snacks.values():
+        if snack_existente.get_nombre().strip().lower() == nombre.lower():
+            print(f"{ROJO}Error: Ya existe un producto con el mismo nombre ({snack_existente.get_id_snack()}):{RESET}")
+            print(f"Producto existente: {snack_existente.get_nombre()}")
+            print(f"{AMARILLO}Si desea actualizarlo, utilice las opciones de modificar precio o stock.{RESET}")
+            return
 
-    descripcion = input("Descripcion del producto: ").strip()
+    # Asigna un ID hash garantizando que no colisione con otro producto distinto
+    id_generado = generar_id_unico(nombre, diccionario_snacks)
+
+    descripcion = input(f"Descripcion del producto (max. {MAX_LEN_DESCRIPCION} caracteres): ").strip()
     if not descripcion:
         descripcion = "Sin descripcion adicional"
+    elif len(descripcion) > MAX_LEN_DESCRIPCION:
+        print(f"{ROJO}Error: La descripcion no puede superar {MAX_LEN_DESCRIPCION} caracteres.{RESET}")
+        return
 
-    # Validacion del precio
+    # Validacion del precio (finito y dentro del rango permitido)
     try:
-        precio_input = input("Precio en dolares ($): ").strip()
+        precio_input = input(f"Precio en dolares (${PRECIO_MIN:.2f} - ${PRECIO_MAX:.2f}): ").strip()
         precio = float(precio_input)
-        if precio < 0:
-            print(f"{ROJO}Error: El precio no puede ser negativo.{RESET}")
+        if not math.isfinite(precio) or precio < PRECIO_MIN or precio > PRECIO_MAX:
+            print(f"{ROJO}Error: El precio debe ser un numero valido entre ${PRECIO_MIN:.2f} y ${PRECIO_MAX:.2f}.{RESET}")
             return
+        precio = round(precio, 2)
     except ValueError:
         print(f"{ROJO}Error: Ingrese un valor numerico valido para el precio.{RESET}")
         return
 
-    # Validacion de la cantidad inicial
+    # Validacion de la cantidad inicial dentro del limite permitido
     try:
-        cantidad_input = input("Cantidad inicial en stock: ").strip()
+        cantidad_input = input(f"Cantidad inicial en stock ({STOCK_MIN}-{STOCK_MAX}): ").strip()
         cantidad = int(cantidad_input)
-        if cantidad < 0:
-            print(f"{ROJO}Error: La cantidad no puede ser negativa.{RESET}")
+        if cantidad < STOCK_MIN or cantidad > STOCK_MAX:
+            print(f"{ROJO}Error: La cantidad debe estar entre {STOCK_MIN} y {STOCK_MAX} unidades.{RESET}")
             return
     except ValueError:
         print(f"{ROJO}Error: Ingrese un numero entero valido para la cantidad.{RESET}")
@@ -217,17 +231,18 @@ def agregar_nuevo_dulce(diccionario_snacks):
         cantidad=cantidad
     )
 
-    # Insercion directa en la estructura en memoria (diccionario de tipo Snack)
+    # Insercion en diccionario y persistencia inmediata en stock.csv
     diccionario_snacks[id_generado] = nuevo_snack
+    guardar_snacks_en_csv(diccionario_snacks, RUTA_STOCK_DEFECTO)
 
-    print(f"\n{VERDE}{NEGRITA}¡Producto agregado exitosamente a la estructura en memoria!{RESET}")
+    print(f"\n{VERDE}{NEGRITA}¡Producto agregado y guardado exitosamente en stock.csv!{RESET}")
     print(f"ID Asignado: {AMARILLO}{id_generado}{RESET} | {nombre} | Stock: {cantidad} | Precio: ${precio:.2f}")
 
 
 def modificar_precio_dulce(diccionario_snacks):
     """
     Paso 2 del Rol 4: Modificar el precio de un dulce existente.
-    Utiliza el setter 'set_precio' definido en la clase Snack.
+    Utiliza el setter 'set_precio' y guarda el cambio de inmediato en stock.csv.
     """
     print(f"\n{CYAN}{NEGRITA}--- MODIFICAR PRECIO DE PRODUCTO ---{RESET}")
     id_snack = localizar_snack(diccionario_snacks)
@@ -239,15 +254,18 @@ def modificar_precio_dulce(diccionario_snacks):
     print(f"Precio actual: {VERDE}${snack.get_precio():.2f}{RESET}")
 
     try:
-        nuevo_precio_str = input("\nIngrese el nuevo precio ($): ").strip()
+        nuevo_precio_str = input(f"\nIngrese el nuevo precio (${PRECIO_MIN:.2f} - ${PRECIO_MAX:.2f}): ").strip()
         nuevo_precio = float(nuevo_precio_str)
-        if nuevo_precio < 0:
-            print(f"{ROJO}Error: El precio no puede ser menor a cero.{RESET}")
+        # Rechaza NaN, Inf y valores fuera del rango permitido
+        if not math.isfinite(nuevo_precio) or nuevo_precio < PRECIO_MIN or nuevo_precio > PRECIO_MAX:
+            print(f"{ROJO}Error: El precio debe estar entre ${PRECIO_MIN:.2f} y ${PRECIO_MAX:.2f}.{RESET}")
             return
 
-        # Modificacion sobre la estructura mediante el setter
+        nuevo_precio = round(nuevo_precio, 2)
+        # Modificacion sobre la estructura mediante el setter y guardado inmediato
         snack.set_precio(nuevo_precio)
-        print(f"\n{VERDE}{NEGRITA}¡Precio actualizado exitosamente a ${nuevo_precio:.2f}!{RESET}")
+        guardar_snacks_en_csv(diccionario_snacks, RUTA_STOCK_DEFECTO)
+        print(f"\n{VERDE}{NEGRITA}¡Precio actualizado y guardado exitosamente a ${nuevo_precio:.2f}!{RESET}")
 
     except ValueError:
         print(f"{ROJO}Error: Ingrese un valor numerico valido.{RESET}")
@@ -256,8 +274,7 @@ def modificar_precio_dulce(diccionario_snacks):
 def actualizar_stock_dulce(diccionario_snacks):
     """
     Paso 3 del Rol 4: Actualizar las existencias en inventario.
-    Permite fijar una nueva cantidad o sumar/restar unidades.
-    Utiliza el setter 'set_cantidad' de la clase Snack.
+    Permite fijar una nueva cantidad o sumar/restar unidades y guarda al instante.
     """
     print(f"\n{CYAN}{NEGRITA}--- ACTUALIZAR STOCK DE PRODUCTO ---{RESET}")
     id_snack = localizar_snack(diccionario_snacks)
@@ -270,7 +287,7 @@ def actualizar_stock_dulce(diccionario_snacks):
     print(f"Stock actual: {AMARILLO}{cantidad_actual} unidades{RESET}")
 
     print("\nOpciones de actualizacion:")
-    print("  [1] Establecer una cantidad total fija")
+    print(f"  [1] Establecer una cantidad total fija ({STOCK_MIN}-{STOCK_MAX})")
     print("  [2] Añadir unidades al stock (+)")
     print("  [3] Restar unidades del stock (-)")
     sub_opcion = input("Seleccione una modalidad (1-3): ").strip()
@@ -278,11 +295,12 @@ def actualizar_stock_dulce(diccionario_snacks):
     try:
         if sub_opcion == "1":
             nueva_cant = int(input("Ingrese la nueva cantidad total: ").strip())
-            if nueva_cant < 0:
-                print(f"{ROJO}Error: La cantidad no puede ser negativa.{RESET}")
+            if nueva_cant < STOCK_MIN or nueva_cant > STOCK_MAX:
+                print(f"{ROJO}Error: La cantidad debe estar entre {STOCK_MIN} y {STOCK_MAX} unidades.{RESET}")
                 return
             snack.set_cantidad(nueva_cant)
-            print(f"\n{VERDE}¡Stock actualizado a {nueva_cant} unidades con exito!{RESET}")
+            guardar_snacks_en_csv(diccionario_snacks, RUTA_STOCK_DEFECTO)
+            print(f"\n{VERDE}¡Stock actualizado y guardado en {nueva_cant} unidades con exito!{RESET}")
 
         elif sub_opcion == "2":
             adicionales = int(input("Cantidad de unidades que ingresan: ").strip())
@@ -290,8 +308,12 @@ def actualizar_stock_dulce(diccionario_snacks):
                 print(f"{ROJO}Error: Debe ingresar una cantidad mayor a cero.{RESET}")
                 return
             nueva_cant = cantidad_actual + adicionales
+            if nueva_cant > STOCK_MAX:
+                print(f"{ROJO}Error: El stock resultante ({nueva_cant}) supera el limite maximo de {STOCK_MAX} unidades.{RESET}")
+                return
             snack.set_cantidad(nueva_cant)
-            print(f"\n{VERDE}¡Se sumaron {adicionales} uds! Nuevo stock: {nueva_cant} unidades.{RESET}")
+            guardar_snacks_en_csv(diccionario_snacks, RUTA_STOCK_DEFECTO)
+            print(f"\n{VERDE}¡Se sumaron {adicionales} uds! Nuevo stock guardado: {nueva_cant} unidades.{RESET}")
 
         elif sub_opcion == "3":
             a_restar = int(input("Cantidad de unidades a descontar: ").strip())
@@ -303,7 +325,8 @@ def actualizar_stock_dulce(diccionario_snacks):
                 return
             nueva_cant = cantidad_actual - a_restar
             snack.set_cantidad(nueva_cant)
-            print(f"\n{VERDE}¡Se descontaron {a_restar} uds! Nuevo stock: {nueva_cant} unidades.{RESET}")
+            guardar_snacks_en_csv(diccionario_snacks, RUTA_STOCK_DEFECTO)
+            print(f"\n{VERDE}¡Se descontaron {a_restar} uds! Nuevo stock guardado: {nueva_cant} unidades.{RESET}")
 
         else:
             print(f"{ROJO}Modalidad no valida.{RESET}")
@@ -315,7 +338,7 @@ def actualizar_stock_dulce(diccionario_snacks):
 def eliminar_dulce(diccionario_snacks):
     """
     Paso 4 del Rol 4: Eliminar productos que ya no se comercialicen.
-    Elimina la clave y el objeto correspondiente del diccionario.
+    Elimina la clave del diccionario y persiste inmediatamente en stock.csv.
     """
     print(f"\n{CYAN}{NEGRITA}--- ELIMINAR PRODUCTO DEL INVENTARIO ---{RESET}")
     id_snack = localizar_snack(diccionario_snacks)
@@ -329,13 +352,20 @@ def eliminar_dulce(diccionario_snacks):
     print(f"  Precio: ${snack.get_precio():.2f}")
     print(f"  Stock actual: {snack.get_cantidad()} uds")
 
-    confirmacion = input(f"\n{AMARILLO}¿Esta seguro de eliminar este producto del sistema? (s/n): {RESET}").strip().lower()
-    if confirmacion == "s":
-        # Remocion directa del diccionario
-        del diccionario_snacks[id_snack]
-        print(f"\n{VERDE}{NEGRITA}¡Producto '{snack.get_nombre()}' eliminado exitosamente de la estructura!{RESET}")
-    else:
-        print(f"\n{AMARILLO}Operacion de eliminacion cancelada.{RESET}")
+    # Bucle de confirmacion para aceptar 's'/'si' o 'n'/'no' y re-preguntar ante entradas invalidas
+    while True:
+        confirmacion = input(f"\n{AMARILLO}¿Esta seguro de eliminar este producto del sistema? (s/n): {RESET}").strip().lower()
+        if confirmacion in ("s", "si", "sí"):
+            # Remocion directa del diccionario y persistencia inmediata
+            del diccionario_snacks[id_snack]
+            guardar_snacks_en_csv(diccionario_snacks, RUTA_STOCK_DEFECTO)
+            print(f"\n{VERDE}{NEGRITA}¡Producto '{snack.get_nombre()}' eliminado y cambios guardados!{RESET}")
+            break
+        elif confirmacion in ("n", "no"):
+            print(f"\n{AMARILLO}Operacion de eliminacion cancelada.{RESET}")
+            break
+        else:
+            print(f"{ROJO}Opcion invalida. Por favor ingrese 's' para confirmar o 'n' para cancelar.{RESET}")
 
 
 # =========================================================================
@@ -345,28 +375,29 @@ def eliminar_dulce(diccionario_snacks):
 def menu_gestion_inventario():
     """Imprime las opciones del submenu de administracion de inventario."""
     print(f"\n{AZUL}{NEGRITA}=====================================================")
-    print(f"||      ROL 4: GESTIÓN DE INVENTARIO DE DULCERÍA   ||")
+    print("||      ROL 4: GESTIÓN DE INVENTARIO DE DULCERÍA   ||")
     print(f"====================================================={RESET}")
     print(f"{NEGRITA}Seleccione una operacion:{RESET}\n")
+    # Colores unificados: opciones de accion en verde y unicamente 'Volver' en rojo
     print(f"  {VERDE}[1]{RESET} Agregar nuevo dulce / snack")
-    print(f"  {AZUL}[2]{RESET} Modificar precio de un producto")
-    print(f"  {AMARILLO}[3]{RESET} Actualizar stock (cantidad disponible)")
-    print(f"  {ROJO}[4]{RESET} Eliminar producto que ya no se venda")
-    print(f"  {CYAN}[5]{RESET} Consultar inventario completo")
-    print(f"  {NEGRITA}[6]{RESET} Volver al menu de administrador\n")
+    print(f"  {VERDE}[2]{RESET} Modificar precio de un producto")
+    print(f"  {VERDE}[3]{RESET} Actualizar stock (cantidad disponible)")
+    print(f"  {VERDE}[4]{RESET} Eliminar producto que ya no se venda")
+    print(f"  {VERDE}[5]{RESET} Consultar inventario completo")
+    print(f"  {ROJO}[6]{RESET} Volver al menu de administrador\n")
     print(f"{AZUL}-----------------------------------------------------{RESET}")
 
 
 def iniciar_modulo_inventario(diccionario_externo=None):
     """
     Punto de entrada para el Rol 4.
-    Permite operar sobre el inventario en memoria.
-    Si se le pasa un diccionario externo lo utiliza; de lo contrario usa el interno.
+    Recarga el inventario desde stock.csv para reflejar siempre el estado real en disco.
     """
-    # Obtenemos la referencia a la estructura en memoria
-    diccionario_snacks = diccionario_externo if diccionario_externo is not None else obtener_inventario()
+    usar_disco = diccionario_externo is None
 
     while True:
+        # Recarga en cada iteracion si trabaja contra disco para reflejar compras simultaneas
+        diccionario_snacks = obtener_inventario() if usar_disco else diccionario_externo
         limpiar_pantalla()
         menu_gestion_inventario()
         opcion = input("Ingrese una opcion (1-6): ").strip()
@@ -400,6 +431,7 @@ def iniciar_modulo_inventario(diccionario_externo=None):
 
 
 if __name__ == "__main__":
-    # Permite probar este modulo de forma independiente
+    # Habilita secuencias ANSI en consola Windows al probar el modulo directamente
+    os.system("")
     iniciar_modulo_inventario()
 

@@ -5,6 +5,10 @@ import csv
 import os
 from modelo_snack import Snack
 
+# Ruta base del modulo para independizar stock.csv del directorio de trabajo (CWD)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+RUTA_STOCK_DEFECTO = os.path.join(BASE_DIR, "stock.csv")
+
 
 def generar_id_hash(nombre_producto):
     """
@@ -19,41 +23,81 @@ def generar_id_hash(nombre_producto):
     return "SNK-" + "{:03d}".format(codigo)
 
 
-def cargar_snacks_desde_csv(ruta_archivo="stock.csv"):
+def generar_id_unico(nombre_producto, diccionario_snacks):
+    """
+    Genera un ID hash evitando colisiones destructivas si otro producto distinto
+    ya ocupa el mismo codigo modular (sondeo lineal dentro del rango 000-999).
+    """
+    nombre_limpio = nombre_producto.strip().lower()
+    valor_hash = 0
+    for indice, caracter in enumerate(nombre_limpio):
+        valor_hash += (indice + 1) * ord(caracter)
+    codigo_base = valor_hash % 1000
+
+    for intento in range(1000):
+        candidato = f"SNK-{(codigo_base + intento) % 1000:03d}"
+        if candidato not in diccionario_snacks:
+            return candidato
+        # Si ya existe pero corresponde al mismo producto, reutiliza su ID
+        if diccionario_snacks[candidato].get_nombre().strip().lower() == nombre_limpio:
+            return candidato
+
+    raise RuntimeError("No quedan códigos SNK disponibles en el rango 000-999.")
+
+
+def cargar_snacks_desde_csv(ruta_archivo=None):
     """
     Lee el archivo stock.csv al iniciar el programa y retorna un diccionario
     donde la clave es el ID hash y el valor es el objeto de tipo Snack.
     """
+    ruta_objetivo = ruta_archivo if ruta_archivo is not None else RUTA_STOCK_DEFECTO
     diccionario_snacks = {}
 
-    if not os.path.exists(ruta_archivo):
-        print("Aviso: No se encontro el archivo " + ruta_archivo + ". Se creara uno con datos base.")
-        crear_csv_por_defecto(ruta_archivo)
+    if not os.path.exists(ruta_objetivo):
+        print("Aviso: No se encontró el archivo " + ruta_objetivo + ". Se creará uno con datos base.")
+        crear_csv_por_defecto(ruta_objetivo)
 
-    with open(ruta_archivo, mode="r", encoding="utf-8") as archivo:
-        lector = csv.DictReader(archivo)
-        for fila in lector:
-            # Generamos o validamos el ID hash desde el nombre del producto
-            id_generado = generar_id_hash(fila["nombre"])
-            nuevo_snack = Snack(
-                id_snack=id_generado,
-                nombre=fila["nombre"],
-                descripcion=fila["descripcion"],
-                precio=float(fila["precio"]),
-                cantidad=int(fila["cantidad"])
-            )
-            diccionario_snacks[id_generado] = nuevo_snack
+    try:
+        with open(ruta_objetivo, mode="r", encoding="utf-8") as archivo:
+            lector = csv.DictReader(archivo)
+            for num_linea, fila in enumerate(lector, start=2):
+                try:
+                    nombre = fila["nombre"].strip()
+                    if not nombre:
+                        continue
+                    id_csv = str(fila.get("id_hash", "")).strip().upper()
+
+                    # Respeta el ID guardado en el CSV si es valido y no colisiona con otro producto
+                    if id_csv and id_csv not in diccionario_snacks:
+                        id_asignado = id_csv
+                    else:
+                        id_asignado = generar_id_unico(nombre, diccionario_snacks)
+
+                    nuevo_snack = Snack(
+                        id_snack=id_asignado,
+                        nombre=nombre,
+                        descripcion=fila["descripcion"].strip(),
+                        precio=float(fila["precio"]),
+                        cantidad=int(fila["cantidad"])
+                    )
+                    diccionario_snacks[id_asignado] = nuevo_snack
+                except (KeyError, ValueError, TypeError) as err:
+                    # Omite unicamente la fila corrupta sin bloquear la carga completa
+                    print(f"Aviso: Fila {num_linea} omitida en {ruta_objetivo} por formato inválido ({err}).")
+    except (OSError, csv.Error) as err:
+        print(f"Error al leer el inventario '{ruta_objetivo}': {err}")
 
     return diccionario_snacks
 
 
-def guardar_snacks_en_csv(diccionario_snacks, ruta_archivo="stock.csv"):
+def guardar_snacks_en_csv(diccionario_snacks, ruta_archivo=None):
     """
     Guarda el estado actual del diccionario de objetos Snack en el archivo stock.csv.
     Util para sincronizar los IDs hash y para que los Roles 3 y 4 actualicen el stock.
     """
+    ruta_objetivo = ruta_archivo if ruta_archivo is not None else RUTA_STOCK_DEFECTO
     campos = ["id_hash", "nombre", "descripcion", "precio", "cantidad"]
-    with open(ruta_archivo, mode="w", newline="", encoding="utf-8") as archivo:
+    with open(ruta_objetivo, mode="w", newline="", encoding="utf-8") as archivo:
         escritor = csv.DictWriter(archivo, fieldnames=campos)
         escritor.writeheader()
         for id_clave, objeto_snack in diccionario_snacks.items():
@@ -66,8 +110,9 @@ def guardar_snacks_en_csv(diccionario_snacks, ruta_archivo="stock.csv"):
             })
 
 
-def crear_csv_por_defecto(ruta_archivo="stock.csv"):
+def crear_csv_por_defecto(ruta_archivo=None):
     """Crea la base de datos inicial en caso de que el archivo no exista."""
+    ruta_objetivo = ruta_archivo if ruta_archivo is not None else RUTA_STOCK_DEFECTO
     datos_iniciales = [
         ("Cotufas Grandes", "Cotufas saladas recien hechas (150g)", 4.50, 30),
         ("Refresco Mediano", "Bebida gaseosa de dispensador (500ml)", 2.50, 45),
@@ -78,9 +123,9 @@ def crear_csv_por_defecto(ruta_archivo="stock.csv"):
     ]
     diccionario_temporal = {}
     for nombre, desc, precio, cant in datos_iniciales:
-        id_hash = generar_id_hash(nombre)
+        id_hash = generar_id_unico(nombre, diccionario_temporal)
         diccionario_temporal[id_hash] = Snack(id_hash, nombre, desc, precio, cant)
-    guardar_snacks_en_csv(diccionario_temporal, ruta_archivo)
+    guardar_snacks_en_csv(diccionario_temporal, ruta_objetivo)
 
 
 # =========================================================================
@@ -90,11 +135,12 @@ def crear_csv_por_defecto(ruta_archivo="stock.csv"):
 def mostrar_catalogo_snacks(diccionario_snacks):
     """Muestra todos los snacks disponibles en el diccionario."""
     print("\n" + "=" * 78)
-    print("                     CATALOGO DE SNACKS DISPONIBLES")
+    print("                     CATÁLOGO DE SNACKS DISPONIBLES")
     print("=" * 78)
 
     if not diccionario_snacks:
         print("No hay snacks registrados en el sistema en este momento.")
+        print("=" * 78)
         return
 
     snacks_en_stock = 0
@@ -110,32 +156,50 @@ def mostrar_catalogo_snacks(diccionario_snacks):
 
 def buscar_snack(diccionario_snacks):
     """
-    Permite al usuario buscar un snack por su nombre exacto (usando la clave hash)
-    o por coincidencia parcial de texto o ID.
+    Permite al usuario buscar un snack disponible por su ID directo, nombre exacto
+    (usando la clave hash) o por coincidencia parcial de texto.
+    Oculta al cliente los snacks agotados (stock == 0).
     """
     print("\n--- BUSCADOR DE SNACKS ---")
     criterio = input("Ingrese el nombre o ID del snack que desea buscar: ").strip()
 
     if not criterio:
-        print("Debe ingresar un texto valido para realizar la busqueda.")
+        print("Debe ingresar un texto válido para realizar la búsqueda.")
         return
 
-    # 1. Intento de busqueda directa O(1) generando la clave hash desde el nombre
+    # 1. Comprueba primero coincidencia directa por ID (insensible a mayusculas/minusculas)
+    criterio_upper = criterio.upper()
+    if criterio_upper in diccionario_snacks:
+        snack_encontrado = diccionario_snacks[criterio_upper]
+        if snack_encontrado.get_cantidad() > 0:
+            print("\n[Coincidencia exacta por ID (" + criterio_upper + ")]:")
+            print(snack_encontrado.mostrar_info())
+        else:
+            print("\nNo se encontró ningún snack disponible relacionado con: '" + criterio + "'.")
+        return
+
+    # 2. Intento de busqueda directa O(1) generando la clave hash desde el nombre exacto
     posible_hash = generar_id_hash(criterio)
     if posible_hash in diccionario_snacks:
         snack_encontrado = diccionario_snacks[posible_hash]
-        print("\n[Coincidencia exacta por clave Hash (" + posible_hash + ")]:")
-        print(snack_encontrado.mostrar_info())
-        return
+        if snack_encontrado.get_nombre().strip().lower() == criterio.lower():
+            if snack_encontrado.get_cantidad() > 0:
+                print("\n[Coincidencia exacta por clave Hash (" + posible_hash + ")]:")
+                print(snack_encontrado.mostrar_info())
+            else:
+                print("\nNo se encontró ningún snack disponible relacionado con: '" + criterio + "'.")
+            return
 
-    # 2. Busqueda por ID directo (ej. SNK-743) o coincidencia parcial en el nombre
+    # 3. Busqueda por coincidencia parcial en el nombre o descripcion (solo con stock > 0)
     resultados = []
     criterio_lower = criterio.lower()
 
     for id_clave, snack in diccionario_snacks.items():
-        if (criterio_lower in snack.get_nombre().lower() or
-                criterio_lower in snack.get_descripcion().lower() or
-                criterio_lower == id_clave.lower()):
+        if snack.get_cantidad() > 0 and (
+            criterio_lower in snack.get_nombre().lower() or
+            criterio_lower in snack.get_descripcion().lower() or
+            criterio_lower == id_clave.lower()
+        ):
             resultados.append(snack)
 
     if len(resultados) > 0:
@@ -145,4 +209,4 @@ def buscar_snack(diccionario_snacks):
             print(item.mostrar_info())
         print("-" * 78)
     else:
-        print("\nNo se encontro ningun snack relacionado con: '" + criterio + "'.")
+        print("\nNo se encontró ningún snack disponible relacionado con: '" + criterio + "'.")

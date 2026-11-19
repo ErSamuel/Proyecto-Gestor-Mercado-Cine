@@ -1,20 +1,34 @@
 import hashlib
 
+
 class Pelicula:
-    def __init__(self, nombre, descripcion, duracion, costo, fecha_de_estreno, disponibilidad=True, id_pelicula=None):
+    def __init__(self, nombre, descripcion, duracion, costo, fecha_de_estreno, disponibilidad=30, id_pelicula=None):
         self._nombre = nombre
         self._descripcion = descripcion
-        self._duracion = duracion
-        self._costo = costo
+        self._duracion = int(duracion)
+        self._costo = float(costo)
         self._fecha_de_estreno = fecha_de_estreno
-        self._disponibilidad = bool(disponibilidad)  # Asegura que sea True o False
-        
-        if id_pelicula is None: #si el id de la pelicula no se pasa por parametro se crea como un cod-hash
+        # Valida y asigna la disponibilidad como entero >= 0 (asientos disponibles)
+        self._disponibilidad = self._validar_disponibilidad(disponibilidad)
+
+        if id_pelicula is None:  # si el id de la pelicula no se pasa por parametro se crea como un cod-hash
             self._id = self.generar_id_hash(nombre, limite=8)
         else:
             self._id = str(id_pelicula)
 
-    #limite 8 por defecto , se puede cambiar
+    # Metodo auxiliar para validar que los asientos disponibles sean un entero >= 0
+    @staticmethod
+    def _validar_disponibilidad(valor):
+        if isinstance(valor, (bool, float)):
+            raise ValueError("La disponibilidad debe ser un número entero mayor o igual a cero.")
+        entero = int(valor)
+        if entero < 0:
+            raise ValueError("La disponibilidad no puede ser negativa.")
+        return entero
+
+    # Decorador @staticmethod agregado para evitar TypeError al llamarlo desde self o la clase
+    # limite 8 por defecto , se puede cambiar
+    @staticmethod
     def generar_id_hash(nombre, limite=8):
         hash_obj = hashlib.sha256(nombre.strip().lower().encode('utf-8'))
         return hash_obj.hexdigest()[:limite]
@@ -42,10 +56,12 @@ class Pelicula:
 
     @disponibilidad.setter
     def disponibilidad(self, valor):
-        self._disponibilidad = bool(valor)
+        # Valida que los nuevos asientos disponibles sigan siendo un entero >= 0
+        self._disponibilidad = self._validar_disponibilidad(valor)
 
     def __str__(self):
-        estado = "Disponible en cartelera" if self._disponibilidad else "No disponible"
+        # Muestra el numero de asientos disponibles o indica si la funcion esta agotada
+        estado = f"Disponible ({self._disponibilidad} asientos)" if self._disponibilidad > 0 else "Agotada / No disponible"
         return (f"Película: {self._nombre} (ID : {self._id})\n"
                 f"Descripción: {self._descripcion}\n"
                 f"Duración: {self._duracion} min | Costo: ${self._costo:.2f}\n"
