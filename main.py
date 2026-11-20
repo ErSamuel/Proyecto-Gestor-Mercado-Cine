@@ -18,9 +18,9 @@ from config import PASSWORD_ADMIN
 def mostrar_menu():
     """Muestra el menu principal de seleccion de perfil."""
     print(f"{Colores.AZUL}{Colores.NEGRITA}=========================================================")
-    print("|| ---------------- Menú de Navegación ----------------||")
+    print("|| ----------Bienvenido Al Menú de Navegación Del Sistema ------------||")
     print(f"========================================================={Colores.RESET}")
-    print(f"{Colores.NEGRITA}Seleccione su tipo de usuario:{Colores.RESET}\n")
+    print(f"{Colores.NEGRITA} {Colores.AMARILLO} Seleccione su tipo de usuario:{Colores.RESET}\n")
     print(f"  {Colores.VERDE}[1]{Colores.RESET} Usuario")
     print(f"  {Colores.VERDE}[2]{Colores.RESET} Administrador")
     print(f"  {Colores.ROJO}[3]{Colores.RESET} Salir\n")
@@ -51,6 +51,10 @@ def main():
         mostrar_menu()
 
         opcion = input("Ingrese una opción (1-3): ").strip()
+        if len(opcion) != 1:
+            print(f"{Colores.ROJO}\nLimite de caracteres superados. Intente una opcion valida. {Colores.RESET}\n")
+            pausar()
+            continue
         match opcion: 
             case "1": #menu para usuarios
                 while True:
@@ -58,6 +62,10 @@ def main():
                     mostrar_encabezado("MENÚ DE USUARIO", ancho=45)
                     menu_usuario()
                     opcion_usuario = input("Ingrese una de las opciones para continuar: ").strip()
+                    if len(opcion_usuario) !=1:
+                        print(f"{Colores.ROJO}\nLimite de caracteres superados. Intente una opcion valida. {Colores.RESET}\n")
+                        pausar()
+                        continue
                     if opcion_usuario == "1":
                         iniciar_dulceria_cliente()
                     elif opcion_usuario == "2":
@@ -74,10 +82,16 @@ def main():
                     limpiar_pantalla()
                     if(intentos==3):
                         print("\nNumero de intentos 3 -> volviendo al menu principal.\n")
-                        time.sleep(2)
+                        pausar()
                         break
                     else:
+                        MAX_LENT = 20
                         password = input("\nIngrese su contraseña: ")
+                        if len(password) > MAX_LENT: #verifica que la contrasena no supere un maximo de tamano permitido
+                            print(f"\n{Colores.ROJO}La contraseña no puede superar los {MAX_LENT} caracteres.{Colores.RESET}")
+                            intentos += 1
+                            pausar()
+                            continue
                         if password == PASSWORD_ADMIN:
                             print(f"\n{Colores.AMARILLO}{Colores.NEGRITA}------ Ha Ingresado Como Administrador Del Sistema --------{Colores.RESET}\n")
                             menu_admin()

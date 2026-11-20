@@ -36,9 +36,9 @@ def obtener_inventario(ruta_csv=RUTA_STOCK):
 
 def listar_inventario_completo(diccionario_snacks):
     """Muestra en pantalla una tabla alineada con todos los snacks del inventario."""
-    print(f"\n{Colores.AZUL}{Colores.NEGRITA}" + "=" * 85 + f"{Colores.RESET}")
+    print(f"\n{Colores.AZUL}{Colores.NEGRITA}" + "=" * 100 + f"{Colores.RESET}")
     print(f"{Colores.CYAN}{Colores.NEGRITA}{'INVENTARIO GENERAL DE DULCERÍA (VISTA ADMINISTRADOR)':^85}{Colores.RESET}")
-    print(f"{Colores.AZUL}{Colores.NEGRITA}" + "=" * 85 + f"{Colores.RESET}")
+    print(f"{Colores.AZUL}{Colores.NEGRITA}" + "=" * 100 + f"{Colores.RESET}")
 
     if not diccionario_snacks:
         print(f"{Colores.ROJO}No hay ningún producto registrado en el inventario.{Colores.RESET}")
@@ -294,7 +294,7 @@ def eliminar_dulce(diccionario_snacks, ruta_csv=RUTA_STOCK):
 def menu_gestion_inventario():
     """Imprime el submenu del Rol 4 con colores unificados (verde acciones, rojo volver)."""
     print(f"\n{Colores.AZUL}{Colores.NEGRITA}=====================================================")
-    print("||      ROL 4: GESTIÓN DE INVENTARIO DE DULCERÍA   ||")
+    print("||      GESTIÓN DE INVENTARIO DE DULCERÍA   ||")
     print(f"====================================================={Colores.RESET}")
     print(f"{Colores.NEGRITA}Seleccione una operación:{Colores.RESET}\n")
     print(f"  {Colores.VERDE}[1]{Colores.RESET} Agregar nuevo dulce / snack")
