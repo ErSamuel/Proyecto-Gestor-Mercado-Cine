@@ -43,3 +43,12 @@ def mostrar_encabezado(titulo, ancho=57):
     print(f"\n{Colores.AZUL}{Colores.NEGRITA}{borde}")
     print(f"{titulo:^{ancho}}")
     print(f"{borde}{Colores.RESET}\n")
+
+#funcion para convertir minutos a hh:mm:ss
+def conversor_de_minutos(minutos: float | int) ->str:
+    total_segundos = max(0, int(round(minutos * 60)))
+    horas = total_segundos // 3600
+    mins = (total_segundos % 3600) // 60
+    segs = total_segundos % 60
+    return f"{horas:02d}:{mins:02d}:{segs:02d}"
+

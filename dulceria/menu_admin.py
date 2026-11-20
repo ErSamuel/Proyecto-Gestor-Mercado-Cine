@@ -3,6 +3,7 @@
 # Persiste cada modificacion en tiempo real sobre datos/stock.csv.
 
 import math
+import time
 from config import (
     MAX_LEN_DESCRIPCION_SNACK,
     MAX_LEN_NOMBRE_SNACK,
@@ -338,7 +339,7 @@ def iniciar_modulo_inventario(diccionario_externo=None, ruta_csv=RUTA_STOCK):
             pausar()
         elif opcion == "6":
             print(f"\n{Colores.AMARILLO}Regresando al menú de administrador...{Colores.RESET}")
-            break
+            time.sleep(1.5)
         else:
             print(f"\n{Colores.ROJO}Opción inválida. Intente nuevamente.{Colores.RESET}")
             pausar()
