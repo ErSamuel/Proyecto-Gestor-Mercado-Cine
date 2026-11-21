@@ -26,18 +26,18 @@ from nucleo.consola import (
 def listar_cartelera_admin(gestor):
     """Muestra la tabla completa de peliculas con salas, horarios, butacas y formatos."""
     peliculas = gestor.listar_todas()
-    print(f"\n{Colores.AZUL}{Colores.NEGRITA}" + "=" * 110 + f"{Colores.RESET}")
-    print(f"{Colores.CYAN}{Colores.NEGRITA}{'CARTELERA GENERAL Y SALAS (VISTA ADMINISTRADOR)':^110}{Colores.RESET}")
-    print(f"{Colores.AZUL}{Colores.NEGRITA}" + "=" * 110 + f"{Colores.RESET}")
+    print(f"\n{Colores.AZUL}{Colores.NEGRITA}" + "=" * 114 + f"{Colores.RESET}")
+    print(f"{Colores.CYAN}{Colores.NEGRITA}{'CARTELERA GENERAL Y SALAS (VISTA ADMINISTRADOR)':^114}{Colores.RESET}")
+    print(f"{Colores.AZUL}{Colores.NEGRITA}" + "=" * 114 + f"{Colores.RESET}")
 
     if not peliculas:
         print(f"{Colores.ROJO}No hay ninguna película registrada en la cartelera.{Colores.RESET}")
-        print(f"{Colores.AZUL}" + "-" * 110 + f"{Colores.RESET}")
+        print(f"{Colores.AZUL}" + "-" * 114 + f"{Colores.RESET}")
         return
 
-    encabezado = f"{'ID':<8} | {'TÍTULO':<25} | {'FMT':<5} | {'EDAD':<5} | {'SALA':<12} | {'HORARIO':<11} | {'FIN EST.':<10} | {'PRECIO':<7} | {'ESTADO/BUTACAS'}"
+    encabezado = f"{'ID':<8} | {'TÍTULO':<25} | {'FMT':<5} | {'EDAD':<7} | {'SALA':<12} | {'HORARIO':<11} | {'FIN EST.':<10} | {'PRECIO':<7} | {'ESTADO/BUTACAS'}"
     print(f"{Colores.NEGRITA}{encabezado}{Colores.RESET}")
-    print(f"{Colores.AZUL}" + "-" * 110 + f"{Colores.RESET}")
+    print(f"{Colores.AZUL}" + "-" * 114 + f"{Colores.RESET}")
 
     for p in peliculas:
         cant_butacas = p.disponibilidad
@@ -58,11 +58,13 @@ def listar_cartelera_admin(gestor):
         if len(titulo_str) > 25:
             titulo_str = titulo_str[:22] + "..."
 
+        edad_formateada = f"[{p.clasificacion}]"
+
         print(
             f"{Colores.AMARILLO}{p.id:<8}{Colores.RESET} | "
             f"{Colores.NEGRITA}{titulo_str:<25}{Colores.RESET} | "
             f"{Colores.CYAN}{p.formato:<5}{Colores.RESET} | "
-            f"[{p.clasificacion:<3}] | "
+            f"{edad_formateada:<7} | "
             f"{sala_str} | "
             f"{p.horario:<11} | "
             f"{p.hora_fin:<10} | "
@@ -70,7 +72,7 @@ def listar_cartelera_admin(gestor):
             f"{estado_str}"
         )
 
-    print(f"{Colores.AZUL}{Colores.NEGRITA}" + "=" * 110 + f"{Colores.RESET}")
+    print(f"{Colores.AZUL}{Colores.NEGRITA}" + "=" * 114 + f"{Colores.RESET}")
 
 
 def localizar_pelicula(gestor):
@@ -159,10 +161,9 @@ def agregar_nueva_pelicula(gestor):
     # 1. Titulo de la pelicula
     nombre = pedir_texto_no_vacio("Título de la película: ", min_len=2, max_len=60)
     
-    # Validar que no exista ya otra pelicula con ese mismo nombre
+    # Validar si ya existe otra función con ese mismo nombre e informar
     if any(p.nombre.strip().lower() == nombre.lower() for p in gestor.listar_todas()):
-        print(f"{Colores.ROJO}Error: Ya existe una película registrada con el título '{nombre}' en el catálogo.{Colores.RESET}")
-        return
+        print(f"{Colores.AMARILLO}[AVISO] Ya existe al menos una función registrada para '{nombre}'. Se registrará como una función adicional.{Colores.RESET}")
 
     # 2. Duracion en minutos (30 a 360 min)
     duracion = pedir_entero("Duración en minutos (30 a 360): ", minimo=30, maximo=360)
@@ -188,25 +189,50 @@ def agregar_nueva_pelicula(gestor):
     descripcion = input("Descripción o sinopsis breve (opcional): ").strip()
     if not descripcion:
         descripcion = "Sin descripción adicional"
+    elif len(descripcion) > 150:
+        descripcion = descripcion[:147] + "..."
 
     # 7. Fecha de estreno
     fecha_estreno = input("Fecha de estreno (opcional) [En cartelera]: ").strip()
     if not fecha_estreno:
         fecha_estreno = "En cartelera"
+    elif len(fecha_estreno) > 40:
+        fecha_estreno = fecha_estreno[:40]
 
     # 8. Asignacion opcional de sala
     asignar_sala = confirmar_accion("¿Desea asignar sala y horario ahora mismo?")
 
     if asignar_sala:
-        print("\nSalas disponibles:")
-        for i, s in enumerate(SALAS_DISPONIBLES, start=1):
-            cap = CAPACIDADES_POR_SALA.get(s, 30)
-            print(f"  [{i}] {s} (Capacidad: {cap} butacas)")
-        opc_sala = pedir_opcion_menu(f"Seleccione sala (1-{len(SALAS_DISPONIBLES)}): ", total_opciones=len(SALAS_DISPONIBLES))
-        sala = SALAS_DISPONIBLES[opc_sala - 1]
-        disponibilidad = CAPACIDADES_POR_SALA.get(sala, 30)
+        while True:
+            print("\nSalas disponibles:")
+            for i, s in enumerate(SALAS_DISPONIBLES, start=1):
+                cap = CAPACIDADES_POR_SALA.get(s, 30)
+                print(f"  [{i}] {s} (Capacidad: {cap} butacas)")
+            print("  [0] Cancelar asignación de sala por ahora")
+            opc_sala = pedir_opcion_menu(f"Seleccione sala (1-{len(SALAS_DISPONIBLES)}, o 0 para cancelar): ", total_opciones=len(SALAS_DISPONIBLES), permitir_cero=True)
+            if opc_sala == 0:
+                sala = "Sin asignar"
+                horario = "Por definir"
+                disponibilidad = 0
+                break
 
-        horario = pedir_horario_valido("Horario de inicio de la función (ej. '04:00 PM', '18:30'): ")
+            cand_sala = SALAS_DISPONIBLES[opc_sala - 1]
+            cand_horario = pedir_horario_valido("Horario de inicio de la función (ej. '04:00 PM', '18:30'): ", permitir_cancelar=True)
+            if not cand_horario:
+                sala = "Sin asignar"
+                horario = "Por definir"
+                disponibilidad = 0
+                break
+
+            solapa, motivo = gestor.validar_solapamiento(cand_sala, cand_horario, duracion)
+            if solapa:
+                print(f"{Colores.ROJO}Error de solapamiento: {motivo}{Colores.RESET}")
+                print(f"{Colores.AMARILLO}Por favor elija otra sala u otro horario.{Colores.RESET}")
+            else:
+                sala = cand_sala
+                horario = cand_horario
+                disponibilidad = CAPACIDADES_POR_SALA.get(sala, 30)
+                break
     else:
         sala = "Sin asignar"
         horario = "Por definir"
@@ -241,6 +267,7 @@ def agregar_nueva_pelicula(gestor):
 def asignar_o_cambiar_sala_y_horario(gestor):
     """
     Permite asignar una pelicula a una sala fisica o cambiar el horario de una funcion.
+    Valida solapamientos de horario en la misma sala segun la duracion de la pelicula.
     Configura automaticamente las butacas disponibles segun la capacidad de la sala.
     """
     print(f"\n{Colores.CYAN}{Colores.NEGRITA}--- ASIGNAR O CAMBIAR SALA Y HORARIO ---{Colores.RESET}")
@@ -258,15 +285,28 @@ def asignar_o_cambiar_sala_y_horario(gestor):
 
     print(f"  [0] Mantener sala actual ({pelicula.sala})")
     sel_sala = pedir_opcion_menu(f"Seleccione sala (1-{len(SALAS_DISPONIBLES)}, o 0 para mantener): ", total_opciones=len(SALAS_DISPONIBLES), permitir_cero=True)
-    if sel_sala > 0:
-        nueva_sala = SALAS_DISPONIBLES[sel_sala - 1]
-        pelicula.set_sala(nueva_sala)
-        # Al reasignar sala, inicializamos las butacas a la capacidad total de esa sala
-        pelicula.set_disponibilidad(CAPACIDADES_POR_SALA.get(nueva_sala, 30))
+    nueva_sala = SALAS_DISPONIBLES[sel_sala - 1] if sel_sala > 0 else pelicula.sala
 
     nuevo_horario = pedir_horario_valido(f"Nuevo horario de inicio (actual: '{pelicula.horario}', o '0' para mantener): ", permitir_cancelar=True)
-    if nuevo_horario:
-        pelicula.set_horario(nuevo_horario)
+    if not nuevo_horario:
+        nuevo_horario = pelicula.horario
+
+    # Si la sala no es 'Sin asignar' y el horario no es 'Por definir', validar solapamiento
+    if nueva_sala.strip().lower() not in ("sin asignar", "por definir") and nuevo_horario.strip().lower() not in ("por definir", "sin asignar"):
+        solapa, motivo = gestor.validar_solapamiento(nueva_sala, nuevo_horario, pelicula.duracion, excluir_id=pelicula.id)
+        if solapa:
+            print(f"\n{Colores.ROJO}Error de solapamiento: {motivo}{Colores.RESET}")
+            print(f"{Colores.AMARILLO}No se aplicaron cambios de sala/horario.{Colores.RESET}")
+            return
+
+    pelicula.set_sala(nueva_sala)
+    pelicula.set_horario(nuevo_horario)
+
+    # Si se asigno a una sala fisica real, se actualizan las butacas a la capacidad de esa sala
+    if nueva_sala.strip().lower() not in ("sin asignar", "por definir"):
+        pelicula.set_disponibilidad(CAPACIDADES_POR_SALA.get(nueva_sala, 30))
+    else:
+        pelicula.set_disponibilidad(0)
 
     gestor.guardar_catalogo_en_csv()
 
@@ -275,7 +315,7 @@ def asignar_o_cambiar_sala_y_horario(gestor):
 
 
 def modificar_datos_pelicula(gestor):
-    """Permite ajustar precio base, formato o clasificacion de una pelicula con validaciones estrictas."""
+    """Permite ajustar todos los datos de una pelicula con validaciones estrictas y completas."""
     print(f"\n{Colores.CYAN}{Colores.NEGRITA}--- MODIFICAR DATOS / TARIFAS DE PELÍCULA ---{Colores.RESET}")
     pelicula = localizar_pelicula(gestor)
     if not pelicula:
@@ -285,9 +325,13 @@ def modificar_datos_pelicula(gestor):
     print(f"1. Costo base del boleto: ${pelicula.costo:.2f}")
     print(f"2. Formato de proyección: {pelicula.formato}")
     print(f"3. Clasificación de edad: [{pelicula.clasificacion}]")
-    print(f"4. Butacas disponibles: {pelicula.disponibilidad}")
+    print(f"4. Butacas disponibles: {pelicula.disponibilidad} (Sala: {pelicula.sala})")
+    print(f"5. Título de la película: {pelicula.nombre}")
+    print(f"6. Duración: {pelicula.duracion} min (Fin est.: {pelicula.hora_fin})")
+    print(f"7. Descripción / Sinopsis: {pelicula.descripcion[:40]}...")
+    print(f"8. Fecha de estreno: {pelicula.fecha_de_estreno}")
 
-    opcion = pedir_opcion_menu("\n¿Qué dato desea modificar? (1-4, o 0 para cancelar): ", total_opciones=4, permitir_cero=True)
+    opcion = pedir_opcion_menu("\n¿Qué dato desea modificar? (1-8, o 0 para cancelar): ", total_opciones=8, permitir_cero=True)
     if opcion == 0:
         print(f"{Colores.AMARILLO}Modificación cancelada.{Colores.RESET}")
         return
@@ -319,11 +363,56 @@ def modificar_datos_pelicula(gestor):
         print(f"{Colores.VERDE}¡Clasificación actualizada a [{nueva_clasif}]!{Colores.RESET}")
 
     elif opcion == 4:
+        # Validacion de sala fisica obligatoria
+        if pelicula.sala.strip().lower() in ("sin asignar", "por definir"):
+            print(f"{Colores.ROJO}[AVISO] La película no tiene una sala asignada. Asigne primero una sala física (opción 3 del menú de cartelera) para poder gestionar sus butacas.{Colores.RESET}")
+            return
         capacidad_max = CAPACIDADES_POR_SALA.get(pelicula.sala, 50)
         nuevas_butacas = pedir_entero(f"Ingrese nueva cantidad de butacas (0 a {capacidad_max}): ", minimo=0, maximo=capacidad_max)
         pelicula.set_disponibilidad(nuevas_butacas)
         gestor.guardar_catalogo_en_csv()
         print(f"{Colores.VERDE}¡Butacas actualizadas a {nuevas_butacas}!{Colores.RESET}")
+
+    elif opcion == 5:
+        nuevo_nombre = pedir_texto_no_vacio("Nuevo título de la película: ", min_len=2, max_len=60)
+        if any(p.nombre.strip().lower() == nuevo_nombre.lower() and p.id != pelicula.id for p in gestor.listar_todas()):
+            print(f"{Colores.AMARILLO}[AVISO] Ya existe otra función registrada con el título '{nuevo_nombre}'. Se mantendrá como función adicional.{Colores.RESET}")
+        pelicula.nombre = nuevo_nombre
+        gestor.guardar_catalogo_en_csv()
+        print(f"{Colores.VERDE}¡Título actualizado a '{nuevo_nombre}'!{Colores.RESET}")
+
+    elif opcion == 6:
+        nueva_duracion = pedir_entero("Nueva duración en minutos (30 a 360): ", minimo=30, maximo=360)
+        if pelicula.sala.strip().lower() not in ("sin asignar", "por definir") and pelicula.horario.strip().lower() not in ("por definir", "sin asignar"):
+            solapa, motivo = gestor.validar_solapamiento(pelicula.sala, pelicula.horario, nueva_duracion, excluir_id=pelicula.id)
+            if solapa:
+                print(f"{Colores.ROJO}Error: La nueva duración generaría un conflicto de sala: {motivo}{Colores.RESET}")
+                return
+        pelicula.set_duracion(nueva_duracion)
+        gestor.guardar_catalogo_en_csv()
+        print(f"{Colores.VERDE}¡Duración actualizada a {nueva_duracion} minutos (Nueva hora fin: {pelicula.hora_fin})!{Colores.RESET}")
+
+    elif opcion == 7:
+        nueva_desc = input("Nueva descripción o sinopsis breve (máximo 150 caracteres, vacío para mantener): ").strip()
+        if nueva_desc:
+            if len(nueva_desc) > 150:
+                nueva_desc = nueva_desc[:147] + "..."
+            pelicula.descripcion = nueva_desc
+            gestor.guardar_catalogo_en_csv()
+            print(f"{Colores.VERDE}¡Descripción actualizada exitosamente!{Colores.RESET}")
+        else:
+            print(f"{Colores.AMARILLO}Descripción sin cambios.{Colores.RESET}")
+
+    elif opcion == 8:
+        nueva_fecha = input("Nueva fecha de estreno (máximo 40 caracteres, vacío para mantener): ").strip()
+        if nueva_fecha:
+            if len(nueva_fecha) > 40:
+                nueva_fecha = nueva_fecha[:40]
+            pelicula.fecha_de_estreno = nueva_fecha
+            gestor.guardar_catalogo_en_csv()
+            print(f"{Colores.VERDE}¡Fecha de estreno actualizada exitosamente!{Colores.RESET}")
+        else:
+            print(f"{Colores.AMARILLO}Fecha de estreno sin cambios.{Colores.RESET}")
 
 
 def eliminar_pelicula_cartelera(gestor):
@@ -354,7 +443,7 @@ def menu_gestion_cartelera():
     print(f"  {Colores.VERDE}[1]{Colores.RESET} Consultar cartelera y salas completa")
     print(f"  {Colores.VERDE}[2]{Colores.RESET} Agregar película al catálogo (creación rápida)")
     print(f"  {Colores.AMARILLO}[3]{Colores.RESET} Asignar o cambiar sala y horario de función")
-    print(f"  {Colores.CYAN}[4]{Colores.RESET} Modificar datos base (precio, formato, butacas)")
+    print(f"  {Colores.CYAN}[4]{Colores.RESET} Modificar datos base (precio, formato, butacas, título, etc.)")
     print(f"  {Colores.ROJO}[5]{Colores.RESET} Eliminar película de cartelera")
     print(f"  {Colores.NEGRITA}[6]{Colores.RESET} Volver al menú de administrador\n")
     print(f"{Colores.AZUL}---------------------------------------------------------{Colores.RESET}")
@@ -365,6 +454,7 @@ def iniciar_modulo_cartelera_admin(ruta_csv=RUTA_CARTELERA):
     gestor = GestorCartelera(ruta_csv=ruta_csv)
 
     while True:
+        gestor.cargar_desde_csv()
         limpiar_pantalla()
         menu_gestion_cartelera()
         opcion = input("Ingrese una opción (1-6): ").strip()
@@ -398,4 +488,7 @@ def iniciar_modulo_cartelera_admin(ruta_csv=RUTA_CARTELERA):
 
 
 if __name__ == "__main__":
+    import os
+    import sys
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
     iniciar_modulo_cartelera_admin()

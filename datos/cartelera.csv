@@ -1,7 +1,7 @@
 id,nombre,descripcion,duracion,costo,fecha_de_estreno,horario,sala,disponibilidad,clasificacion,formato
-PEL-01,Inception,Un ladrón que roba secretos corporativos a través de los sueños.,148,8.50,2010-07-16,04:00 PM,Sala 1,30,B,2D
-PEL-02,Interstellar,Un grupo de astronautas viaja a través de un agujero de gusano.,169,9.00,2014-11-07,06:30 PM,Sala 2,0,A,2D
-PEL-03,The Matrix,Un hacker descubre la verdadera naturaleza de su realidad.,136,7.50,1999-03-31,07:00 PM,Sala 1,25,B,2D
-PEL-04,El Padrino,La historia de una poderosa familia mafiosa de Nueva York.,175,9.50,1972-03-24,09:00 PM,Sala 3,0,+18,2D
-PEL-05,Avatar: El Camino del Agua,Jake Sully y Neytiri protegen a su familia en los océanos de Pandora.,192,5.50,2022-12-16,04:00 PM,Sala 2,27,B,3D
-PEL-06,Spider-Man: Across the Spider-Verse,Miles Morales viaja a través del multiverso junto a Gwen Stacy.,140,5.00,2023-06-02,07:30 PM,Sala 2,25,A,2D
+PEL-01,Inception,Un ladrón que roba secretos corporativos a través de los sueños.,148,8.50,2010-07-16,04:00 PM,Sala 1,29,B,2D
+PEL-02,Interstellar,Un grupo de astronautas viaja a través de un agujero de gusano.,169,9.00,2014-11-07,07:00 PM,Sala 2,25,A,2D
+PEL-03,The Matrix,Un hacker descubre la verdadera naturaleza de su realidad.,136,7.50,1999-03-31,07:00 PM,Sala 1,30,B,2D
+PEL-04,El Padrino,La historia de una poderosa familia mafiosa de Nueva York.,175,9.50,1972-03-24,09:00 PM,Sala 3,20,+18,2D
+PEL-05,Avatar: El Camino del Agua,Jake Sully y Neytiri protegen a su familia en los océanos de Pandora.,192,5.50,2022-12-16,04:00 PM,Sala IMAX,30,B,3D
+PEL-06,Spider-Man: Across the Spider-Verse,Miles Morales viaja a través del multiverso junto a Gwen Stacy.,140,5.00,2023-06-02,04:00 PM,Sala 2,25,A,2D

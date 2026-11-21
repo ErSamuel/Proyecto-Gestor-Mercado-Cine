@@ -69,5 +69,5 @@ class Snack:
             " | Producto: " + self.__nombre +
             " | Precio: $" + "{:.2f}".format(self.__precio) +
             " | Stock: " + estado +
-            " | desc: " + self.__descripcion 
+            " | Desc: " + self.__descripcion 
         )

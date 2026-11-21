@@ -5,19 +5,20 @@ import csv
 import os
 from config import RUTA_STOCK
 from dulceria.snack import Snack
+from nucleo.consola import guardar_csv_seguro
 
 
 def generar_id_hash(nombre_producto):
     """
     Genera una clave hash unica y constante a partir del nombre del producto.
-    Ejemplo: 'Cotufas Grandes' -> 'SNK-183'
+    Ejemplo: 'Cotufas Grandes' -> '183'
     """
     nombre_limpio = nombre_producto.strip().lower()
     valor_hash = 0
     for indice, caracter in enumerate(nombre_limpio):
         valor_hash += (indice + 1) * ord(caracter)
     codigo = valor_hash % 1000
-    return "SNK-" + "{:03d}".format(codigo)
+    return f"{codigo:03d}"
 
 
 def generar_id_unico(nombre_producto, diccionario_snacks):
@@ -85,24 +86,20 @@ def cargar_snacks_desde_csv(ruta_archivo=None):
 
 
 def guardar_snacks_en_csv(diccionario_snacks, ruta_archivo=None):
-    """Guarda el estado actual del diccionario de objetos Snack en stock.csv."""
+    """Guarda el estado actual del diccionario de objetos Snack en stock.csv de forma segura ante bloqueos de archivo."""
     ruta_objetivo = ruta_archivo if ruta_archivo is not None else RUTA_STOCK
-    carpeta = os.path.dirname(os.path.abspath(ruta_objetivo))
-    if carpeta:
-        os.makedirs(carpeta, exist_ok=True)
-
     campos = ["id_hash", "nombre", "descripcion", "precio", "cantidad"]
-    with open(ruta_objetivo, mode="w", newline="", encoding="utf-8") as archivo:
-        escritor = csv.DictWriter(archivo, fieldnames=campos)
-        escritor.writeheader()
-        for objeto_snack in diccionario_snacks.values():
-            escritor.writerow({
-                "id_hash": objeto_snack.get_id_snack(),
-                "nombre": objeto_snack.get_nombre(),
-                "descripcion": objeto_snack.get_descripcion(),
-                "precio": "{:.2f}".format(objeto_snack.get_precio()),
-                "cantidad": objeto_snack.get_cantidad()
-            })
+    filas = [
+        {
+            "id_hash": objeto_snack.get_id_snack(),
+            "nombre": objeto_snack.get_nombre(),
+            "descripcion": objeto_snack.get_descripcion(),
+            "precio": "{:.2f}".format(objeto_snack.get_precio()),
+            "cantidad": objeto_snack.get_cantidad()
+        }
+        for objeto_snack in diccionario_snacks.values()
+    ]
+    return guardar_csv_seguro(ruta_objetivo, campos, filas)
 
 
 def crear_csv_por_defecto(ruta_archivo=None):
@@ -131,7 +128,7 @@ def mostrar_catalogo_snacks(diccionario_snacks):
 
     if not diccionario_snacks:
         print("No hay snacks registrados en el sistema en este momento.")
-        print("=" * 78)
+        print("=" * 98)
         return
 
     snacks_en_stock = 0
@@ -142,7 +139,7 @@ def mostrar_catalogo_snacks(diccionario_snacks):
 
     if snacks_en_stock == 0:
         print("Todos los productos se encuentran agotados temporalmente.")
-    print("=" * 78)
+    print("=" * 98)
 
 
 def buscar_snack(diccionario_snacks):

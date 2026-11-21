@@ -53,6 +53,19 @@ def leer_reporte(ruta_ventas=RUTA_REPORTE_VENTAS):
     return ventas
 
 
+def _normalizar_nombre_item(nombre, tipo):
+    """
+    Normaliza el nombre del producto o película.
+    Para películas (tipo 'Boleto'), elimina sufijos de formato como ' (2D)', ' [3D]', ' (IMAX)'
+    para que ventas del mismo título en diferentes formatos se agrupen correctamente.
+    """
+    nombre_limpio = str(nombre).strip()
+    if tipo.lower() == "boleto":
+        import re
+        nombre_limpio = re.sub(r"\s*(\(|\[)\s*(2D|3D|IMAX)\s*(\)|\])\s*$", "", nombre_limpio, flags=re.IGNORECASE).strip()
+    return nombre_limpio
+
+
 def _agrupar_unidades(ventas, tipo_filtro=None):
     """
     Agrupa la cantidad total de unidades vendidas por nombre de producto/pelicula.
@@ -62,7 +75,7 @@ def _agrupar_unidades(ventas, tipo_filtro=None):
     for venta in ventas:
         if tipo_filtro is not None and venta["tipo"].lower() != tipo_filtro.lower():
             continue
-        nombre = venta["nombre_item"]
+        nombre = _normalizar_nombre_item(venta["nombre_item"], venta["tipo"])
         conteo[nombre] = conteo.get(nombre, 0) + venta["cantidad"]
     return conteo
 

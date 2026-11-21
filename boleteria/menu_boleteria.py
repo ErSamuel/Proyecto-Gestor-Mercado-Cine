@@ -42,22 +42,31 @@ def ejecutar_menu_boleteria(ruta_csv=None):
     es_lunes = (datetime.now().weekday() == 0)
 
     while True:
+        gestor.cargar_desde_csv()
+        lista_de_peliculas = gestor.listar_todas()
+        if not lista_de_peliculas:
+            limpiar_pantalla()
+            print(f"{Colores.ROJO}No hay películas registradas en la cartelera en este momento.{Colores.RESET}")
+            pausar()
+            return
+
         limpiar_pantalla()
         mostrar_encabezado("CARTELERA DE PELÍCULAS Y SALAS", ancho=80)
 
         if es_lunes:
-            print(f"{Colores.VERDE}{Colores.NEGRITA}★ ¡HOY ES LUNES DE CINE! 15% DE DESCUENTO EN TODAS LAS ENTRADAS ★{Colores.RESET}\n")
+            porcentaje_lunes = int(DESCUENTO_LUNES * 100)
+            print(f"{Colores.VERDE}{Colores.NEGRITA}★ ¡HOY ES LUNES DE CINE! {porcentaje_lunes}% DE DESCUENTO EN TODAS LAS ENTRADAS ★{Colores.RESET}\n")
 
         # Muestra las peliculas numeradas con horario, formato, sala y butacas
         for indice, p in enumerate(lista_de_peliculas, start=1):
-            if p.sala.lower() in ("sin asignar", "por definir"):
+            if p.sala.strip().lower() in ("sin asignar", "por definir"):
                 estado_str = f"{Colores.AMARILLO}[Próximamente / Sin sala asignada]{Colores.RESET}"
             elif p.disponibilidad > 0:
                 estado_str = f"{Colores.VERDE}[Disponible: {p.disponibilidad} butacas]{Colores.RESET}"
             else:
                 estado_str = f"{Colores.ROJO}[Agotada]{Colores.RESET}"
 
-            horario_info = f"{p.horario} - {p.sala}" if p.sala != "Sin asignar" else "En catálogo"
+            horario_info = f"{p.horario} - {p.sala}" if p.sala.strip().lower() not in ("sin asignar", "por definir") else "En catálogo"
             print(
                 f"  {Colores.VERDE}[{indice}]{Colores.RESET} {Colores.NEGRITA}{p.nombre}{Colores.RESET} "
                 f"{Colores.CYAN}[{p.formato}]{Colores.RESET} ({p.clasificacion}) ({conversor_de_minutos(p.duracion)}) | "
@@ -85,7 +94,9 @@ def ejecutar_menu_boleteria(ruta_csv=None):
         pelicula = lista_de_peliculas[indice_elegido - 1]
 
         # Validar si tiene sala y horario asignado
-        if pelicula.sala.lower() in ("sin asignar", "por definir") or pelicula.horario.lower() in ("por definir", "sin asignar"):
+        sin_sala = pelicula.sala.strip().lower() in ("sin asignar", "por definir")
+        sin_horario = pelicula.horario.strip().lower() in ("por definir", "sin asignar")
+        if sin_sala or sin_horario:
             print(f"\n{Colores.AMARILLO}La película '{pelicula.nombre}' aún no tiene sala u horario programado para venta.{Colores.RESET}")
             pausar()
             continue
@@ -179,6 +190,11 @@ def ejecutar_menu_boleteria(ruta_csv=None):
                 cant_may = int(m_in) if m_in else 0
                 n_in = input("  - Entradas Niño [0]: ").strip()
                 cant_nin = int(n_in) if n_in else 0
+
+                if cant_gen < 0 or cant_may < 0 or cant_nin < 0:
+                    print(f"{Colores.ROJO}No se permiten cantidades negativas de entradas.{Colores.RESET}")
+                    pausar()
+                    continue
             except ValueError:
                 print(f"{Colores.ROJO}Las cantidades deben ser números enteros.{Colores.RESET}")
                 pausar()
@@ -223,7 +239,7 @@ def ejecutar_menu_boleteria(ruta_csv=None):
         print(f"Subtotal: {Colores.NEGRITA}${subtotal:.2f}{Colores.RESET}")
 
         if es_lunes:
-            print(f"{Colores.VERDE}Descuento Lunes (15%): -${descuento_lunes:.2f}{Colores.RESET}")
+            print(f"{Colores.VERDE}Descuento Lunes ({int(DESCUENTO_LUNES * 100)}%): -${descuento_lunes:.2f}{Colores.RESET}")
 
         print(f"Total a pagar: {Colores.VERDE}{Colores.NEGRITA}${total_a_pagar:.2f}{Colores.RESET}")
         print(f"{Colores.AZUL}====================================================={Colores.RESET}")
@@ -232,7 +248,7 @@ def ejecutar_menu_boleteria(ruta_csv=None):
             if procesar_pago(total_a_pagar):
                 pelicula.disponibilidad = pelicula.disponibilidad - total_entradas
                 gestor.guardar_catalogo_en_csv()
-                gestor.registrar_venta(pelicula, total_entradas)
+                gestor.registrar_venta(pelicula, total_entradas, monto_total=total_a_pagar)
                 print(
                     f"\n{Colores.VERDE}¡Compra exitosa! Quedan {pelicula.disponibilidad} butacas "
                     f"para '{pelicula.nombre}' en {pelicula.sala}.{Colores.RESET}"
@@ -242,3 +258,10 @@ def ejecutar_menu_boleteria(ruta_csv=None):
         else:
             print(f"{Colores.AMARILLO}Compra cancelada.{Colores.RESET}")
             pausar()
+
+
+if __name__ == "__main__":
+    import os
+    import sys
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+    ejecutar_menu_boleteria()

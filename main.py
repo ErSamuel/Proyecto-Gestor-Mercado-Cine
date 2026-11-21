@@ -19,7 +19,7 @@ from config import PASSWORD_ADMIN
 def mostrar_menu():
     """Muestra el menu principal de seleccion de perfil."""
     print(f"{Colores.AZUL}{Colores.NEGRITA}=========================================================")
-    print("|| ----------Bienvenido Al Menú de Navegación Del Sistema ------------||")
+    print("||        BIENVENIDO AL SISTEMA GESTOR DE CINE         ||")
     print(f"========================================================={Colores.RESET}")
     print(f"{Colores.NEGRITA} {Colores.AMARILLO} Seleccione su tipo de usuario:{Colores.RESET}\n")
     print(f"  {Colores.VERDE}[1]{Colores.RESET} Usuario")
@@ -52,10 +52,15 @@ def main():
         mostrar_menu()
 
         opcion = input("Ingrese una opción (1-3): ").strip()
-        if len(opcion) != 1:
-            print(f"{Colores.ROJO}\nLimite de caracteres superados. Intente una opcion valida. {Colores.RESET}\n")
+        if not opcion:
+            print(f"{Colores.ROJO}\nNo ha ingresado ninguna opción. Ingrese un dígito válido (1-3).{Colores.RESET}\n")
             pausar()
             continue
+        if len(opcion) > 1:
+            print(f"{Colores.ROJO}\nLímite de caracteres superado. Ingrese únicamente un dígito (1-3).{Colores.RESET}\n")
+            pausar()
+            continue
+
         match opcion: 
             case "1": #menu para usuarios
                 while True:
@@ -63,10 +68,15 @@ def main():
                     mostrar_encabezado("MENÚ DE USUARIO", ancho=45)
                     menu_usuario()
                     opcion_usuario = input("Ingrese una de las opciones para continuar: ").strip()
-                    if len(opcion_usuario) !=1:
-                        print(f"{Colores.ROJO}\nLimite de caracteres superados. Intente una opcion valida. {Colores.RESET}\n")
+                    if not opcion_usuario:
+                        print(f"{Colores.ROJO}\nNo ha ingresado ninguna opción. Ingrese un dígito válido (1-3).{Colores.RESET}\n")
                         pausar()
                         continue
+                    if len(opcion_usuario) > 1:
+                        print(f"{Colores.ROJO}\nLímite de caracteres superado. Ingrese únicamente un dígito (1-3).{Colores.RESET}\n")
+                        pausar()
+                        continue
+
                     if opcion_usuario == "1":
                         iniciar_dulceria_cliente()
                     elif opcion_usuario == "2":
@@ -77,47 +87,63 @@ def main():
                     else:
                         print(f"\n{Colores.ROJO}Opción inválida{Colores.RESET}, por favor ingrese una opción entre 1 y 3.")
                         pausar()
+
             case "2": #menu administradores - se requiere contrasena
                 intentos = 0
                 while True:
                     limpiar_pantalla()
-                    if(intentos==3):
-                        print("\nNumero de intentos 3 -> volviendo al menu principal.\n")
+                    if intentos >= 3:
+                        print(f"\n{Colores.ROJO}Número de intentos excedido (3) -> volviendo al menú principal.\n{Colores.RESET}")
                         pausar()
                         break
+
+                    MAX_LENT = 20
+                    password = input("\nIngrese su contraseña (o '0'/'C' para cancelar): ").strip()
+                    if password.lower() in ("0", "c", "cancelar"):
+                        print(f"\n{Colores.AMARILLO}Acceso de administrador cancelado.{Colores.RESET}")
+                        break
+
+                    if len(password) > MAX_LENT:
+                        print(f"\n{Colores.ROJO}La contraseña no puede superar los {MAX_LENT} caracteres.{Colores.RESET}")
+                        intentos += 1
+                        pausar()
+                        continue
+
+                    if password == PASSWORD_ADMIN:
+                        while True:
+                            limpiar_pantalla()
+                            print(f"\n{Colores.AMARILLO}{Colores.NEGRITA}------ Ha Ingresado Como Administrador Del Sistema --------{Colores.RESET}\n")
+                            menu_admin()
+                            opcion_admin = input("Ingrese una de las opciones para continuar: ").strip()
+                            if not opcion_admin:
+                                print(f"\n{Colores.ROJO}No ha ingresado ninguna opción. Ingrese un dígito válido (1-4).{Colores.RESET}")
+                                pausar()
+                                continue
+                            if len(opcion_admin) > 1:
+                                print(f"\n{Colores.ROJO}Límite de caracteres superado. Ingrese únicamente un dígito (1-4).{Colores.RESET}")
+                                pausar()
+                                continue
+
+                            if opcion_admin == "1":
+                                iniciar_modulo_inventario()
+                            elif opcion_admin == "2":
+                                # Rol 5: Gestion de Cartelera y Salas
+                                iniciar_modulo_cartelera_admin()
+                            elif opcion_admin == "3":
+                                # Rol 6 reconectado hacia finanzas/reportes.py
+                                ejecutar_menu_metricas()
+                            elif opcion_admin == "4":
+                                print(f"\n{Colores.AMARILLO}Saliendo al menú principal.{Colores.RESET}")
+                                break
+                            else:
+                                print(f"\n{Colores.ROJO}La opción que ha ingresado no es correcta. Intente nuevamente.{Colores.RESET}")
+                                pausar()
+                        break
                     else:
-                        MAX_LENT = 20
-                        password = input("\nIngrese su contraseña: ")
-                        if len(password) > MAX_LENT: #verifica que la contrasena no supere un maximo de tamano permitido
-                            print(f"\n{Colores.ROJO}La contraseña no puede superar los {MAX_LENT} caracteres.{Colores.RESET}")
-                            intentos += 1
-                            pausar()
-                            continue
-                        if password == PASSWORD_ADMIN:
-                            while True:
-                                limpiar_pantalla()
-                                print(f"\n{Colores.AMARILLO}{Colores.NEGRITA}------ Ha Ingresado Como Administrador Del Sistema --------{Colores.RESET}\n")
-                                menu_admin()
-                                opcion_admin = input("Ingrese una de las opciones para continuar: ").strip()
-                                if opcion_admin == "1":
-                                    iniciar_modulo_inventario()
-                                elif opcion_admin == "2":
-                                    # Rol 5: Gestion de Cartelera y Salas
-                                    iniciar_modulo_cartelera_admin()
-                                elif opcion_admin == "3":
-                                    # Rol 6 reconectado hacia finanzas/reportes.py
-                                    ejecutar_menu_metricas()
-                                elif opcion_admin == "4":
-                                    print(f"\n{Colores.AMARILLO}Saliendo al menú principal.{Colores.RESET}")
-                                    break
-                                else:
-                                    print(f"\n{Colores.ROJO}La opción que ha ingresado no es correcta. Intente nuevamente.{Colores.RESET}")
-                                    pausar()
-                            break
-                        else:
-                            print("\nContraseña incorrecta intente nuevamente: ")
-                            time.sleep(2)
-                            intentos +=1
+                        intentos += 1
+                        print(f"\n{Colores.ROJO}Contraseña incorrecta.{Colores.RESET} Intento {intentos}/3.")
+                        if intentos < 3:
+                            time.sleep(1.5)
             case "3":
                 limpiar_pantalla()
                 print(f"{Colores.AMARILLO}Saliendo del programa. Gracias por preferir nuestros servicios, ¡le esperamos nuevamente!{Colores.RESET}")

@@ -38,17 +38,17 @@ def obtener_inventario(ruta_csv=RUTA_STOCK):
 def listar_inventario_completo(diccionario_snacks):
     """Muestra en pantalla una tabla alineada con todos los snacks del inventario."""
     print(f"\n{Colores.AZUL}{Colores.NEGRITA}" + "=" * 100 + f"{Colores.RESET}")
-    print(f"{Colores.CYAN}{Colores.NEGRITA}{'INVENTARIO GENERAL DE DULCERÍA (VISTA ADMINISTRADOR)':^85}{Colores.RESET}")
+    print(f"{Colores.CYAN}{Colores.NEGRITA}{'INVENTARIO GENERAL DE DULCERÍA (VISTA ADMINISTRADOR)':^100}{Colores.RESET}")
     print(f"{Colores.AZUL}{Colores.NEGRITA}" + "=" * 100 + f"{Colores.RESET}")
 
     if not diccionario_snacks:
         print(f"{Colores.ROJO}No hay ningún producto registrado en el inventario.{Colores.RESET}")
-        print(f"{Colores.AZUL}" + "-" * 85 + f"{Colores.RESET}")
+        print(f"{Colores.AZUL}" + "-" * 100 + f"{Colores.RESET}")
         return
 
     encabezado = f"{'ID':<10} | {'PRODUCTO':<25} | {'PRECIO':<10} | {'STOCK':<9} | {'DESCRIPCIÓN'}"
     print(f"{Colores.NEGRITA}{encabezado}{Colores.RESET}")
-    print(f"{Colores.AZUL}" + "-" * 85 + f"{Colores.RESET}")
+    print(f"{Colores.AZUL}" + "-" * 100 + f"{Colores.RESET}")
 
     for snack in diccionario_snacks.values():
         cant = snack.get_cantidad()
@@ -74,7 +74,7 @@ def listar_inventario_completo(diccionario_snacks):
             f"{desc}"
         )
 
-    print(f"{Colores.AZUL}{Colores.NEGRITA}" + "=" * 85 + f"{Colores.RESET}")
+    print(f"{Colores.AZUL}{Colores.NEGRITA}" + "=" * 100 + f"{Colores.RESET}")
 
 
 def localizar_snack(diccionario_snacks):
@@ -103,7 +103,12 @@ def localizar_snack(diccionario_snacks):
         print(f"{Colores.AMARILLO}Operación cancelada.{Colores.RESET}")
         return None
 
-    # 1. Seleccion directa por numero de orden
+    # 1. Comprueba coincidencia exacta con ID en mayusculas (prioridad para evitar colision con numero de orden ej. '002')
+    criterio_upper = criterio.upper()
+    if criterio_upper in diccionario_snacks:
+        return criterio_upper
+
+    # 2. Seleccion directa por numero de orden
     try:
         numero_sel = int(criterio)
         if 1 <= numero_sel <= len(lista_claves):
@@ -111,12 +116,7 @@ def localizar_snack(diccionario_snacks):
     except ValueError:
         pass
 
-    # 2. Comprueba coincidencia exacta con ID en mayusculas
-    criterio_upper = criterio.upper()
-    if criterio_upper in diccionario_snacks:
-        return criterio_upper
-
-    # 3. Busqueda por clave hash exacta validando tambien el nombre
+    # 3. Busqueda O(1) por clave hash exacta validando tambien el nombre
     posible_hash = generar_id_hash(criterio)
     if posible_hash in diccionario_snacks:
         if diccionario_snacks[posible_hash].get_nombre().strip().lower() == criterio.lower():
@@ -321,9 +321,9 @@ def eliminar_dulce(diccionario_snacks, ruta_csv=RUTA_STOCK):
 
 def menu_gestion_inventario():
     """Imprime el submenu del Rol 4 con colores unificados (verde acciones, rojo volver)."""
-    print(f"\n{Colores.AZUL}{Colores.NEGRITA}=====================================================")
-    print("||      GESTIÓN DE INVENTARIO DE DULCERÍA   ||")
-    print(f"====================================================={Colores.RESET}")
+    print(f"\n{Colores.AZUL}{Colores.NEGRITA}=========================================================")
+    print("||         GESTIÓN DE INVENTARIO DE DULCERÍA           ||")
+    print(f"========================================================={Colores.RESET}")
     print(f"{Colores.NEGRITA}Seleccione una operación:{Colores.RESET}\n")
     print(f"  {Colores.VERDE}[1]{Colores.RESET} Agregar nuevo dulce / snack")
     print(f"  {Colores.VERDE}[2]{Colores.RESET} Modificar precio de un producto")
@@ -331,7 +331,7 @@ def menu_gestion_inventario():
     print(f"  {Colores.VERDE}[4]{Colores.RESET} Eliminar producto que ya no se venda")
     print(f"  {Colores.VERDE}[5]{Colores.RESET} Consultar inventario completo")
     print(f"  {Colores.ROJO}[6]{Colores.RESET} Volver al menú de administrador\n")
-    print(f"{Colores.AZUL}-----------------------------------------------------{Colores.RESET}")
+    print(f"{Colores.AZUL}---------------------------------------------------------{Colores.RESET}")
 
 
 def iniciar_modulo_inventario(diccionario_externo=None, ruta_csv=RUTA_STOCK):

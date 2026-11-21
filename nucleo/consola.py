@@ -1,7 +1,9 @@
 # Archivo: nucleo/consola.py
-# Utilidades compartidas de interfaz en consola con validaciones estrictas y a prueba de errores.
+# Utilidades compartidas de interfaz en consola con validaciones estrictas y guardado CSV a prueba de bloqueos (PermissionError).
 
+import csv
 from datetime import datetime
+import math
 import os
 from nucleo.colores import Colores
 
@@ -81,17 +83,19 @@ def pedir_entero(mensaje, minimo=None, maximo=None, permitir_cancelar=False):
 
 def pedir_flotante(mensaje, minimo=None, maximo=None, permitir_cancelar=False):
     """
-    Solicita un numero decimal (precio) validando que sea mayor al minimo especificado.
-    Rechaza '0' si el minimo es mayor a cero, letras y negativos.
+    Solicita un numero decimal (precio) validando que sea finito y este en rango.
+    Rechaza '0' si el minimo es mayor a cero, letras, negativos, nan e inf.
     """
     while True:
         entrada = input(mensaje).strip()
-        if permitir_cancelar and entrada.lower() in ("c", "cancelar"):
+        if permitir_cancelar and entrada.lower() in ("c", "cancelar", "0"):
             return None
         try:
-            # Reemplaza coma por punto si el usuario escribe ej. 5,50
             entrada_normalizada = entrada.replace(",", ".")
             valor = float(entrada_normalizada)
+            if not math.isfinite(valor):
+                print(f"{Colores.ROJO}Error: Debe ingresar un valor numérico válido (no infinito ni indefinido).{Colores.RESET}")
+                continue
             if minimo is not None and valor < minimo:
                 print(f"{Colores.ROJO}Error: El valor debe ser mayor o igual a {minimo:.2f}.{Colores.RESET}")
                 continue
@@ -101,6 +105,66 @@ def pedir_flotante(mensaje, minimo=None, maximo=None, permitir_cancelar=False):
             return round(valor, 2)
         except ValueError:
             print(f"{Colores.ROJO}Error: Debe ingresar un valor numérico válido (ej. 5.50).{Colores.RESET}")
+
+
+# =========================================================================
+# GESTOR DE PERSISTENCIA CSV A PRUEBA DE BLOQUEOS (EXCEL / PERMISSIONERROR)
+# =========================================================================
+
+def guardar_csv_seguro(ruta_archivo, campos, filas):
+    """
+    Escribe un archivo CSV de forma segura ante bloqueos de Windows (PermissionError).
+    Si el archivo esta bloqueado (por ejemplo, abierto en Microsoft Excel),
+    solicita al usuario cerrarlo y presionar Enter para reintentar,
+    evitando que el programa aborte con un traceback no controlado.
+    """
+    carpeta = os.path.dirname(os.path.abspath(ruta_archivo))
+    if carpeta:
+        os.makedirs(carpeta, exist_ok=True)
+
+    while True:
+        try:
+            with open(ruta_archivo, mode="w", newline="", encoding="utf-8") as archivo:
+                escritor = csv.DictWriter(archivo, fieldnames=campos)
+                escritor.writeheader()
+                for fila in filas:
+                    escritor.writerow(fila)
+            return True
+        except (PermissionError, OSError) as err:
+            nombre = os.path.basename(ruta_archivo)
+            print(f"\n{Colores.ROJO}[ERROR DE ACCESO / BLOQUEO] No se pudo guardar en '{nombre}': {err}{Colores.RESET}")
+            print(f"{Colores.AMARILLO}El archivo parece estar abierto en Excel u otro programa.{Colores.RESET}")
+            resp = input(f"{Colores.AMARILLO}Por favor ciérrelo y presione ENTER para reintentar (o '0' para cancelar sin guardar): {Colores.RESET}").strip().lower()
+            if resp in ("0", "c", "cancelar"):
+                print(f"{Colores.ROJO}Operación de guardado en disco cancelada.{Colores.RESET}")
+                return False
+
+
+def append_csv_seguro(ruta_archivo, campos, fila):
+    """
+    Agrega una fila al final de un CSV de forma segura ante bloqueos de archivo.
+    """
+    carpeta = os.path.dirname(os.path.abspath(ruta_archivo))
+    if carpeta:
+        os.makedirs(carpeta, exist_ok=True)
+
+    necesita_cabecera = (not os.path.exists(ruta_archivo)) or (os.path.getsize(ruta_archivo) == 0)
+    while True:
+        try:
+            with open(ruta_archivo, mode="a", newline="", encoding="utf-8") as archivo:
+                escritor = csv.DictWriter(archivo, fieldnames=campos)
+                if necesita_cabecera:
+                    escritor.writeheader()
+                    necesita_cabecera = False
+                escritor.writerow(fila)
+            return True
+        except (PermissionError, OSError) as err:
+            nombre = os.path.basename(ruta_archivo)
+            print(f"\n{Colores.ROJO}[ERROR DE ACCESO / BLOQUEO] No se pudo registrar en '{nombre}': {err}{Colores.RESET}")
+            print(f"{Colores.AMARILLO}El archivo probablemente esté abierto en Excel u otro visor.{Colores.RESET}")
+            resp = input(f"{Colores.AMARILLO}Por favor ciérrelo y presione ENTER para reintentar (o '0' para cancelar): {Colores.RESET}").strip().lower()
+            if resp in ("0", "c", "cancelar"):
+                return False
 
 
 def pedir_opcion_menu(mensaje, total_opciones, permitir_cero=False):

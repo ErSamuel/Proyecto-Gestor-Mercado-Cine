@@ -28,7 +28,10 @@ class Pelicula:
         formato="2D",
         id_pelicula=None
     ):
-        self._nombre = str(nombre).strip()
+        nombre_limpio = str(nombre).strip()
+        if not nombre_limpio:
+            raise ValueError("El nombre de la película no puede estar vacío.")
+        self._nombre = nombre_limpio
         self._descripcion = str(descripcion).strip()
         self._duracion = self._validar_duracion(duracion)
         self._costo = self._validar_costo(costo)
@@ -173,7 +176,7 @@ class Pelicula:
             return "Por definir"
         try:
             horario_limpio = self._horario.strip()
-            formatos = ("%I:%M %p", "%H:%M", "%I:%M%p", "%I:%M %P", "%I %p", "%H")
+            formatos = ("%I:%M %p", "%H:%M", "%I:%M%p", "%I %p")
             for fmt in formatos:
                 try:
                     inicio = datetime.strptime(horario_limpio, fmt)
