@@ -15,9 +15,26 @@ RUTA_CARTELERA = os.path.join(DATA_DIR, "cartelera.csv")
 RUTA_STOCK = os.path.join(DATA_DIR, "stock.csv")
 RUTA_REPORTE_VENTAS = os.path.join(DATA_DIR, "reporte_ventas.csv")
 
-# Reglas de negocio para Boleteria
+# Reglas de negocio para Boleteria y Cartelera (Rol 5)
 CAPACIDAD_SALA_DEFECTO = 30
 LIMITE_BOLETOS_POR_COMPRA = 10
+SALAS_DISPONIBLES = ("Sala 1", "Sala 2", "Sala 3", "Sala IMAX")
+FORMATOS_VALIDOS = ("2D", "3D", "IMAX")
+CLASIFICACIONES_VALIDAS = ("A", "B", "C", "PG-13", "+18")
+CAPACIDADES_POR_SALA = {
+    "Sala 1": 30,
+    "Sala 2": 40,
+    "Sala 3": 35,
+    "Sala IMAX": 50
+}
+
+# Clases de boletos y promociones
+TARIFAS_CLASES = {
+    "General": 1.00,        # Tarifa completa
+    "Mayor de edad": 0.80,  # 20% de descuento (tercera edad)
+    "Niño": 0.70            # 30% de descuento (infantil)
+}
+DESCUENTO_LUNES = 0.15      # 15% de descuento especial los lunes
 
 # Reglas de validacion y limites de seguridad para Inventario de Dulceria (Rol 4)
 MIN_LEN_NOMBRE_SNACK = 2

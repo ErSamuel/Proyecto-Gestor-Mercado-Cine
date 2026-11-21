@@ -78,24 +78,51 @@ def listar_inventario_completo(diccionario_snacks):
 
 
 def localizar_snack(diccionario_snacks):
-    """Busca y selecciona un snack por ID exacto, hash o coincidencia parcial."""
-    criterio = input(f"\n{Colores.AMARILLO}Ingrese el ID o nombre del producto a gestionar: {Colores.RESET}").strip()
-    if not criterio:
-        print(f"{Colores.ROJO}Debe ingresar un valor válido.{Colores.RESET}")
+    """
+    Muestra la lista de snacks registrados y permite seleccionar por numero
+    de orden (ej. '1', '2'), por ID hash ('SNK-183') o por coincidencia en el nombre.
+    """
+    if not diccionario_snacks:
+        print(f"\n{Colores.ROJO}No hay ningún snack registrado en el inventario.{Colores.RESET}")
         return None
 
-    # 1. Comprueba primero coincidencia exacta con ID en mayusculas
+    lista_claves = list(diccionario_snacks.keys())
+    print(f"\n{Colores.CYAN}{Colores.NEGRITA}--- SNACKS EN INVENTARIO ---{Colores.RESET}")
+    for idx, id_c in enumerate(lista_claves, start=1):
+        snk = diccionario_snacks[id_c]
+        print(
+            f"  {Colores.VERDE}[{idx}]{Colores.RESET} {Colores.AMARILLO}{snk.get_id_snack():<8}{Colores.RESET} | "
+            f"{Colores.NEGRITA}{snk.get_nombre():<24}{Colores.RESET} | "
+            f"Precio: {Colores.VERDE}${snk.get_precio():.2f}{Colores.RESET} | "
+            f"Stock: {snk.get_cantidad()} uds"
+        )
+    print(f"  {Colores.ROJO}[0] Cancelar operación{Colores.RESET}")
+
+    criterio = input(f"\n{Colores.AMARILLO}Seleccione el número (1-{len(lista_claves)}), ID o nombre del producto: {Colores.RESET}").strip()
+    if not criterio or criterio == "0":
+        print(f"{Colores.AMARILLO}Operación cancelada.{Colores.RESET}")
+        return None
+
+    # 1. Seleccion directa por numero de orden
+    try:
+        numero_sel = int(criterio)
+        if 1 <= numero_sel <= len(lista_claves):
+            return lista_claves[numero_sel - 1]
+    except ValueError:
+        pass
+
+    # 2. Comprueba coincidencia exacta con ID en mayusculas
     criterio_upper = criterio.upper()
     if criterio_upper in diccionario_snacks:
         return criterio_upper
 
-    # 2. Busqueda por clave hash exacta validando tambien el nombre
+    # 3. Busqueda por clave hash exacta validando tambien el nombre
     posible_hash = generar_id_hash(criterio)
     if posible_hash in diccionario_snacks:
         if diccionario_snacks[posible_hash].get_nombre().strip().lower() == criterio.lower():
             return posible_hash
 
-    # 3. Busqueda por coincidencia parcial en nombre o ID
+    # 4. Busqueda por coincidencia parcial en nombre o ID
     coincidencias = []
     criterio_lower = criterio.lower()
     for id_clave, snack in diccionario_snacks.items():
@@ -111,7 +138,7 @@ def localizar_snack(diccionario_snacks):
             print(f"  [{i}] ID: {id_c} - {snk.get_nombre()} (${snk.get_precio():.2f})")
 
         seleccion = input("Seleccione el número correspondiente (o 'c' para cancelar): ").strip()
-        if seleccion.lower() == "c":
+        if seleccion.lower() in ("c", "0"):
             return None
         try:
             indice = int(seleccion) - 1
@@ -340,6 +367,7 @@ def iniciar_modulo_inventario(diccionario_externo=None, ruta_csv=RUTA_STOCK):
         elif opcion == "6":
             print(f"\n{Colores.AMARILLO}Regresando al menú de administrador...{Colores.RESET}")
             time.sleep(1.5)
+            break
         else:
             print(f"\n{Colores.ROJO}Opción inválida. Intente nuevamente.{Colores.RESET}")
             pausar()

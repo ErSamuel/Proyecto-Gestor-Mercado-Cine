@@ -1,5 +1,5 @@
 # Archivo: boleteria/gestor_cartelera.py
-# Gestor unificado de cartelera y persistencia en datos/cartelera.csv.
+# Gestor unificado de cartelera y persistencia en datos/cartelera.csv con soporte para formato y clasificacion.
 
 import csv
 import math
@@ -53,6 +53,9 @@ class GestorCartelera:
                         disp_raw = fila.get("disponibilidad", fila.get("asientos", CAPACIDAD_SALA_DEFECTO))
                         disponibilidad = self._parsear_disponibilidad(disp_raw)
 
+                        clasificacion = str(fila.get("clasificacion") or "A").strip().upper()
+                        formato = str(fila.get("formato") or "2D").strip().upper()
+
                         if not nombre or not math.isfinite(costo) or costo < 0 or duracion <= 0:
                             raise ValueError("Datos inválidos en el registro de película.")
 
@@ -65,6 +68,8 @@ class GestorCartelera:
                             horario=horario,
                             sala=sala,
                             disponibilidad=disponibilidad,
+                            clasificacion=clasificacion,
+                            formato=formato,
                             id_pelicula=p_id
                         )
                     except (KeyError, ValueError, TypeError) as err:
@@ -80,7 +85,8 @@ class GestorCartelera:
 
         campos = [
             "id", "nombre", "descripcion", "duracion",
-            "costo", "fecha_de_estreno", "horario", "sala", "disponibilidad"
+            "costo", "fecha_de_estreno", "horario", "sala",
+            "disponibilidad", "clasificacion", "formato"
         ]
         with open(self.ruta_csv, mode="w", newline="", encoding="utf-8") as archivo:
             escritor = csv.DictWriter(archivo, fieldnames=campos)
@@ -95,7 +101,9 @@ class GestorCartelera:
                     "fecha_de_estreno": pelicula.fecha_de_estreno,
                     "horario": pelicula.horario,
                     "sala": pelicula.sala,
-                    "disponibilidad": pelicula.disponibilidad
+                    "disponibilidad": pelicula.disponibilidad,
+                    "clasificacion": pelicula.clasificacion,
+                    "formato": pelicula.formato
                 })
 
     def agregar_y_guardar_pelicula(
@@ -106,8 +114,11 @@ class GestorCartelera:
         costo,
         fecha_de_estreno,
         horario="Por definir",
-        sala="Sala 1",
-        disponibilidad=CAPACIDAD_SALA_DEFECTO
+        sala="Sin asignar",
+        disponibilidad=0,
+        clasificacion="A",
+        formato="2D",
+        id_personalizado=None
     ):
         """Crea una nueva Pelicula validada y la persiste de inmediato en cartelera.csv."""
         nueva_pelicula = Pelicula(
@@ -118,17 +129,36 @@ class GestorCartelera:
             fecha_de_estreno=fecha_de_estreno,
             horario=horario,
             sala=sala,
-            disponibilidad=disponibilidad
+            disponibilidad=disponibilidad,
+            clasificacion=clasificacion,
+            formato=formato,
+            id_pelicula=id_personalizado
         )
 
         if nueva_pelicula.id in self.catalogo:
-            print("Aviso: Ya existe una película con este mismo hash identificador.")
+            print("Aviso: Ya existe una película con este mismo identificador.")
             return None
 
         self.catalogo[nueva_pelicula.id] = nueva_pelicula
         self.guardar_catalogo_en_csv()
-        print(f"¡Éxito! Película agregada con ID [{nueva_pelicula.id}] y guardada en cartelera.csv.")
         return nueva_pelicula
+
+    def eliminar_pelicula(self, pelicula_id):
+        """Elimina una película de la cartelera y persiste los cambios."""
+        if pelicula_id in self.catalogo:
+            eliminada = self.catalogo.pop(pelicula_id)
+            self.guardar_catalogo_en_csv()
+            return eliminada
+        return None
+
+    def cambiar_horario(self, pelicula_id, nuevo_horario):
+        """Actualiza el horario de una película y guarda en disco."""
+        pelicula = self.buscar_por_id(pelicula_id)
+        if pelicula:
+            pelicula.set_horario(nuevo_horario)
+            self.guardar_catalogo_en_csv()
+            return True
+        return False
 
     def buscar_por_id(self, pelicula_id):
         return self.catalogo.get(pelicula_id, None)
@@ -145,14 +175,14 @@ class GestorCartelera:
         resultado = []
         for p in self.catalogo.values():
             estado = f"Disponible ({p.disponibilidad} asientos)" if p.disponibilidad > 0 else "Agotada"
-            resultado.append((p.nombre, f"{p.horario} - {p.sala}", estado))
+            resultado.append((p.nombre, f"{p.horario} - {p.sala} [{p.formato}]", estado))
         return resultado
 
     def registrar_venta(self, pelicula, cantidad=1):
         """Registra la venta de boletos en reporte_ventas.csv mediante finanzas/pagos.py."""
         ruta_reporte = os.path.join(os.path.dirname(os.path.abspath(self.ruta_csv)), "reporte_ventas.csv")
         total = round(pelicula.costo * int(cantidad), 2)
-        registrar_en_reporte("Boleto", pelicula.nombre, int(cantidad), total, ruta_ventas=ruta_reporte)
+        registrar_en_reporte("Boleto", f"{pelicula.nombre} ({pelicula.formato})", int(cantidad), total, ruta_ventas=ruta_reporte)
 
 
 # Alias mantenido por compatibilidad con referencias previas a GestorCine

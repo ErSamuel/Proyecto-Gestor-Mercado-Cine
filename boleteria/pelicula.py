@@ -1,6 +1,7 @@
 # Archivo: boleteria/pelicula.py
-# Entidad Pelicula unificada (fusiona clase_pelicula.py y modelo_pelicula.py).
+# Entidad Pelicula unificada con clasificacion, formato y capacidad de sala.
 
+from datetime import datetime, timedelta
 import hashlib
 import math
 
@@ -8,7 +9,7 @@ import math
 class Pelicula:
     """
     Representa una pelicula en cartelera con sus datos de ficha tecnica,
-    horario, sala y capacidad fisica de asientos disponibles.
+    horario, sala, formato, clasificacion y capacidad fisica de asientos disponibles.
     Ofrece tanto @property como getters/setters explicitos para mantener
     consistencia OOP en todo el proyecto.
     """
@@ -23,6 +24,8 @@ class Pelicula:
         horario="Por definir",
         sala="Sala 1",
         disponibilidad=30,
+        clasificacion="A",
+        formato="2D",
         id_pelicula=None
     ):
         self._nombre = str(nombre).strip()
@@ -33,6 +36,8 @@ class Pelicula:
         self._horario = str(horario).strip() or "Por definir"
         self._sala = str(sala).strip() or "Sala 1"
         self._disponibilidad = self._validar_disponibilidad(disponibilidad)
+        self._clasificacion = str(clasificacion).strip().upper() or "A"
+        self._formato = str(formato).strip().upper() or "2D"
 
         if id_pelicula is None:
             self._id = self.generar_id_hash(self._nombre, limite=8)
@@ -82,13 +87,28 @@ class Pelicula:
     def nombre(self):
         return self._nombre
 
+    @nombre.setter
+    def nombre(self, valor):
+        texto = str(valor).strip()
+        if not texto:
+            raise ValueError("El nombre de la película no puede estar vacío.")
+        self._nombre = texto
+
     @property
     def descripcion(self):
         return self._descripcion
 
+    @descripcion.setter
+    def descripcion(self, valor):
+        self._descripcion = str(valor).strip()
+
     @property
     def duracion(self):
         return self._duracion
+
+    @duracion.setter
+    def duracion(self, valor):
+        self._duracion = self._validar_duracion(valor)
 
     @property
     def costo(self):
@@ -101,6 +121,10 @@ class Pelicula:
     @property
     def fecha_de_estreno(self):
         return self._fecha_de_estreno
+
+    @fecha_de_estreno.setter
+    def fecha_de_estreno(self, valor):
+        self._fecha_de_estreno = str(valor).strip()
 
     @property
     def horario(self):
@@ -125,6 +149,41 @@ class Pelicula:
     @disponibilidad.setter
     def disponibilidad(self, valor):
         self._disponibilidad = self._validar_disponibilidad(valor)
+
+    @property
+    def clasificacion(self):
+        return self._clasificacion
+
+    @clasificacion.setter
+    def clasificacion(self, valor):
+        self._clasificacion = str(valor).strip().upper() or "A"
+
+    @property
+    def formato(self):
+        return self._formato
+
+    @formato.setter
+    def formato(self, valor):
+        self._formato = str(valor).strip().upper() or "2D"
+
+    @property
+    def hora_fin(self):
+        """Calcula la hora aproximada de finalizacion sumando la duracion al horario de inicio."""
+        if not self._horario or self._horario.strip().lower() in ("por definir", "sin asignar", "n/d", "-"):
+            return "Por definir"
+        try:
+            horario_limpio = self._horario.strip()
+            formatos = ("%I:%M %p", "%H:%M", "%I:%M%p", "%I:%M %P", "%I %p", "%H")
+            for fmt in formatos:
+                try:
+                    inicio = datetime.strptime(horario_limpio, fmt)
+                    fin = inicio + timedelta(minutes=self._duracion)
+                    return fin.strftime("%I:%M %p")
+                except ValueError:
+                    continue
+        except Exception:
+            pass
+        return f"+{self._duracion}m"
 
     # --- Getters y Setters explicitos (estandar OOP del documento PDF) ---
     def get_id(self):
@@ -154,6 +213,24 @@ class Pelicula:
     def get_disponibilidad(self):
         return self._disponibilidad
 
+    def get_clasificacion(self):
+        return self._clasificacion
+
+    def get_formato(self):
+        return self._formato
+
+    def get_hora_fin(self):
+        return self.hora_fin
+
+    def set_nombre(self, nuevo_nombre):
+        self.nombre = nuevo_nombre
+
+    def set_descripcion(self, nueva_descripcion):
+        self.descripcion = nueva_descripcion
+
+    def set_duracion(self, nueva_duracion):
+        self.duracion = nueva_duracion
+
     def set_costo(self, nuevo_costo):
         self.costo = nuevo_costo
 
@@ -166,11 +243,17 @@ class Pelicula:
     def set_disponibilidad(self, nuevos_asientos):
         self.disponibilidad = nuevos_asientos
 
+    def set_clasificacion(self, nueva_clasificacion):
+        self.clasificacion = nueva_clasificacion
+
+    def set_formato(self, nuevo_formato):
+        self.formato = nuevo_formato
+
     def __str__(self):
         estado = f"Disponible ({self._disponibilidad} asientos)" if self._disponibilidad > 0 else "Agotada / No disponible"
         return (
-            f"Película: {self._nombre} (ID: {self._id})\n"
+            f"Película: {self._nombre} [{self._formato}] (ID: {self._id}) | Clasificación: {self._clasificacion}\n"
             f"Descripción: {self._descripcion}\n"
-            f"Duración: {self._duracion} min | Horario: {self._horario} | {self._sala}\n"
+            f"Duración: {self._duracion} min | Horario: {self._horario} (Fin est.: {self.hora_fin}) | {self._sala}\n"
             f"Costo: ${self._costo:.2f} | Estreno: {self._fecha_de_estreno} | Estado: [{estado}]"
         )

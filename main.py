@@ -2,6 +2,7 @@
 # Punto de entrada principal del Sistema Gestor de Cine (Paso 2 - Organizacion por Mecanica).
 import time
 from boleteria.menu_boleteria import ejecutar_menu_boleteria
+from boleteria.menu_admin import iniciar_modulo_cartelera_admin
 from dulceria.menu_admin import iniciar_modulo_inventario
 from dulceria.menu_cliente import iniciar_dulceria_cliente
 from finanzas.reportes import ejecutar_menu_metricas
@@ -93,23 +94,26 @@ def main():
                             pausar()
                             continue
                         if password == PASSWORD_ADMIN:
-                            print(f"\n{Colores.AMARILLO}{Colores.NEGRITA}------ Ha Ingresado Como Administrador Del Sistema --------{Colores.RESET}\n")
-                            menu_admin()
-                            opcion_admin = input("Ingrese una de las opciones para continuar: ").strip()
-                            if opcion_admin == "1":
-                                iniciar_modulo_inventario()
-                            elif opcion_admin == "2":
-                                print(f"\n{Colores.AMARILLO}[INFO] El módulo 'Gestión de Cartelera' (Rol 5) aún está pendiente de implementación.{Colores.RESET}")
-                                pausar()
-                            elif opcion_admin == "3":
-                                # Rol 6 reconectado hacia finanzas/reportes.py
-                                ejecutar_menu_metricas()
-                            elif opcion_admin == "4":
-                                print(f"\n{Colores.AMARILLO}Saliendo al menú principal.{Colores.RESET}")
-                                break
-                            else:
-                                print(f"\n{Colores.ROJO}La opción que ha ingresado no es correcta. Intente nuevamente.{Colores.RESET}")
-                                pausar()
+                            while True:
+                                limpiar_pantalla()
+                                print(f"\n{Colores.AMARILLO}{Colores.NEGRITA}------ Ha Ingresado Como Administrador Del Sistema --------{Colores.RESET}\n")
+                                menu_admin()
+                                opcion_admin = input("Ingrese una de las opciones para continuar: ").strip()
+                                if opcion_admin == "1":
+                                    iniciar_modulo_inventario()
+                                elif opcion_admin == "2":
+                                    # Rol 5: Gestion de Cartelera y Salas
+                                    iniciar_modulo_cartelera_admin()
+                                elif opcion_admin == "3":
+                                    # Rol 6 reconectado hacia finanzas/reportes.py
+                                    ejecutar_menu_metricas()
+                                elif opcion_admin == "4":
+                                    print(f"\n{Colores.AMARILLO}Saliendo al menú principal.{Colores.RESET}")
+                                    break
+                                else:
+                                    print(f"\n{Colores.ROJO}La opción que ha ingresado no es correcta. Intente nuevamente.{Colores.RESET}")
+                                    pausar()
+                            break
                         else:
                             print("\nContraseña incorrecta intente nuevamente: ")
                             time.sleep(2)
